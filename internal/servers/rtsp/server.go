@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/bluenviron/gortsplib/v4"
 
@@ -47,7 +46,6 @@ type Server struct {
 	Address           string
 	ReadTimeout       conf.StringDuration
 	WriteTimeout      conf.StringDuration
-	WriteQueueSize    int
 	UseUDP            bool
 	UseMulticast      bool
 	RTPAddress        string
@@ -76,22 +74,8 @@ func (s *Server) Initialize() error {
 	s.sessions = make(map[*gortsplib.ServerSession]*session)
 
 	s.srv = &gortsplib.Server{
-		Handler:        s,
-		ReadTimeout:    time.Duration(s.ReadTimeout),
-		WriteTimeout:   time.Duration(s.WriteTimeout),
-		WriteQueueSize: s.WriteQueueSize,
-		RTSPAddress:    s.Address,
-	}
-
-	if s.UseUDP {
-		s.srv.UDPRTPAddress = s.RTPAddress
-		s.srv.UDPRTCPAddress = s.RTCPAddress
-	}
-
-	if s.UseMulticast {
-		s.srv.MulticastIPRange = s.MulticastIPRange
-		s.srv.MulticastRTPPort = s.MulticastRTPPort
-		s.srv.MulticastRTCPPort = s.MulticastRTCPPort
+		Handler:     s,
+		RTSPAddress: s.Address,
 	}
 
 	err := s.srv.Start()

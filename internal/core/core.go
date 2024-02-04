@@ -11,7 +11,6 @@ import (
 	"strings"
 
 	"github.com/alecthomas/kong"
-	"github.com/bluenviron/gortsplib/v4"
 
 	"github.com/bluenviron/mediamtx/internal/conf"
 	"github.com/bluenviron/mediamtx/internal/logger"
@@ -195,23 +194,17 @@ func (p *Core) createResources(initial bool) error {
 
 	if p.conf.RTSP &&
 		p.rtspServer == nil {
-		_, useUDP := p.conf.Protocols[conf.Protocol(gortsplib.TransportUDP)]
-		_, useMulticast := p.conf.Protocols[conf.Protocol(gortsplib.TransportUDPMulticast)]
 
 		i := &rtsp.Server{
 			Address:           p.conf.RTSPAddress,
 			ReadTimeout:       p.conf.ReadTimeout,
 			WriteTimeout:      p.conf.WriteTimeout,
-			WriteQueueSize:    p.conf.WriteQueueSize,
-			UseUDP:            useUDP,
-			UseMulticast:      useMulticast,
+			UseUDP:            true,
+			UseMulticast:      false,
 			RTPAddress:        p.conf.RTPAddress,
 			RTCPAddress:       p.conf.RTCPAddress,
-			MulticastIPRange:  p.conf.MulticastIPRange,
-			MulticastRTPPort:  p.conf.MulticastRTPPort,
 			MulticastRTCPPort: p.conf.MulticastRTCPPort,
 			RTSPAddress:       p.conf.RTSPAddress,
-			Protocols:         p.conf.Protocols,
 			PathManager:       p.pathManager,
 			Parent:            p,
 		}
@@ -274,14 +267,10 @@ func (p *Core) closeResources(newConf *conf.Conf, calledByAPI bool) {
 		newConf.ReadTimeout != p.conf.ReadTimeout ||
 		newConf.WriteTimeout != p.conf.WriteTimeout ||
 		newConf.WriteQueueSize != p.conf.WriteQueueSize ||
-		!reflect.DeepEqual(newConf.Protocols, p.conf.Protocols) ||
 		newConf.RTPAddress != p.conf.RTPAddress ||
 		newConf.RTCPAddress != p.conf.RTCPAddress ||
-		newConf.MulticastIPRange != p.conf.MulticastIPRange ||
-		newConf.MulticastRTPPort != p.conf.MulticastRTPPort ||
 		newConf.MulticastRTCPPort != p.conf.MulticastRTCPPort ||
 		newConf.RTSPAddress != p.conf.RTSPAddress ||
-		!reflect.DeepEqual(newConf.Protocols, p.conf.Protocols) ||
 		closePathManager ||
 		closeLogger
 
@@ -291,10 +280,7 @@ func (p *Core) closeResources(newConf *conf.Conf, calledByAPI bool) {
 		newConf.ReadTimeout != p.conf.ReadTimeout ||
 		newConf.WriteTimeout != p.conf.WriteTimeout ||
 		newConf.WriteQueueSize != p.conf.WriteQueueSize ||
-		newConf.ServerCert != p.conf.ServerCert ||
-		newConf.ServerKey != p.conf.ServerKey ||
 		newConf.RTSPAddress != p.conf.RTSPAddress ||
-		!reflect.DeepEqual(newConf.Protocols, p.conf.Protocols) ||
 		closePathManager ||
 		closeLogger
 

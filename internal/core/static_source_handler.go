@@ -50,14 +50,9 @@ func (s *staticSourceHandler) initialize() {
 	s.chInstanceSetNotReady = make(chan defs.PathSourceStaticSetNotReadyReq)
 
 	switch {
-	case strings.HasPrefix(s.resolvedSource, "rtsp://") ||
-		strings.HasPrefix(s.resolvedSource, "rtsps://"):
+	case strings.HasPrefix(s.resolvedSource, "rtsp://"):
 		s.instance = &rtspsource.Source{
-			ResolvedSource: s.resolvedSource,
-			ReadTimeout:    s.readTimeout,
-			WriteTimeout:   s.writeTimeout,
-			WriteQueueSize: s.writeQueueSize,
-			Parent:         s,
+			Parent: s,
 		}
 	}
 }

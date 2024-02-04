@@ -6,66 +6,15 @@ import (
 
 	"github.com/bluenviron/gortsplib/v4"
 	"github.com/bluenviron/gortsplib/v4/pkg/base"
-	"github.com/bluenviron/gortsplib/v4/pkg/headers"
 	"github.com/pion/rtp"
 
-	"github.com/bluenviron/mediamtx/internal/conf"
 	"github.com/bluenviron/mediamtx/internal/defs"
 	"github.com/bluenviron/mediamtx/internal/logger"
 )
 
-func createRangeHeader(cnf *conf.Path) (*headers.Range, error) {
-	switch cnf.RTSPRangeType {
-	case conf.RTSPRangeTypeClock:
-		start, err := time.Parse("20060102T150405Z", cnf.RTSPRangeStart)
-		if err != nil {
-			return nil, err
-		}
-
-		return &headers.Range{
-			Value: &headers.RangeUTC{
-				Start: start,
-			},
-		}, nil
-
-	case conf.RTSPRangeTypeNPT:
-		start, err := time.ParseDuration(cnf.RTSPRangeStart)
-		if err != nil {
-			return nil, err
-		}
-
-		return &headers.Range{
-			Value: &headers.RangeNPT{
-				Start: start,
-			},
-		}, nil
-
-	case conf.RTSPRangeTypeSMPTE:
-		start, err := time.ParseDuration(cnf.RTSPRangeStart)
-		if err != nil {
-			return nil, err
-		}
-
-		return &headers.Range{
-			Value: &headers.RangeSMPTE{
-				Start: headers.RangeSMPTETime{
-					Time: start,
-				},
-			},
-		}, nil
-
-	default:
-		return nil, nil
-	}
-}
-
 // Source is a RTSP static source.
 type Source struct {
-	ResolvedSource string
-	ReadTimeout    conf.StringDuration
-	WriteTimeout   conf.StringDuration
-	WriteQueueSize int
-	Parent         defs.StaticSourceParent
+	Parent defs.StaticSourceParent
 }
 
 // Log implements logger.Writer.
@@ -80,11 +29,9 @@ func (s *Source) Run(params defs.StaticSourceRunParams) error {
 	decodeErrLogger := logger.NewLimitedLogger(s)
 
 	c := &gortsplib.Client{
-		Transport:      params.Conf.RTSPTransport.Transport,
-		ReadTimeout:    time.Duration(s.ReadTimeout),
-		WriteTimeout:   time.Duration(s.WriteTimeout),
-		WriteQueueSize: s.WriteQueueSize,
-		AnyPortEnable:  params.Conf.RTSPAnyPort,
+		ReadTimeout:    5 * time.Second,
+		WriteTimeout:   5 * time.Second,
+		WriteQueueSize: 512,
 		OnRequest: func(req *base.Request) {
 			s.Log(logger.Debug, "[c->s] %v", req)
 		},
@@ -102,7 +49,7 @@ func (s *Source) Run(params defs.StaticSourceRunParams) error {
 		},
 	}
 
-	u, err := base.ParseURL(s.ResolvedSource)
+	u, err := base.ParseURL("rtsp://192.168.2.119:554")
 	if err != nil {
 		return err
 	}
@@ -152,12 +99,11 @@ func (s *Source) Run(params defs.StaticSourceRunParams) error {
 				}
 			}
 
-			rangeHeader, err := createRangeHeader(params.Conf)
 			if err != nil {
 				return err
 			}
 
-			_, err = c.Play(rangeHeader)
+			_, err = c.Play(nil)
 			if err != nil {
 				return err
 			}
