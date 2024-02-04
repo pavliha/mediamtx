@@ -46,16 +46,15 @@ type pathManagerParent interface {
 }
 
 type pathManager struct {
-	logLevel                  conf.LogLevel
-	externalAuthenticationURL string
-	rtspAddress               string
-	readTimeout               conf.StringDuration
-	writeTimeout              conf.StringDuration
-	writeQueueSize            int
-	udpMaxPayloadSize         int
-	pathConfs                 map[string]*conf.Path
-	externalCmdPool           *externalcmd.Pool
-	parent                    pathManagerParent
+	logLevel          conf.LogLevel
+	rtspAddress       string
+	readTimeout       conf.StringDuration
+	writeTimeout      conf.StringDuration
+	writeQueueSize    int
+	udpMaxPayloadSize int
+	pathConfs         map[string]*conf.Path
+	externalCmdPool   *externalcmd.Pool
+	parent            pathManagerParent
 
 	ctx         context.Context
 	ctxCancel   func()
@@ -65,7 +64,6 @@ type pathManager struct {
 	pathsByConf map[string]map[*path]struct{}
 
 	// in
-	chReloadConf   chan map[string]*conf.Path
 	chSetHLSServer chan pathManagerHLSServer
 	chClosePath    chan *path
 	chPathReady    chan *path
@@ -85,7 +83,6 @@ func (pm *pathManager) initialize() {
 	pm.ctxCancel = ctxCancel
 	pm.paths = make(map[string]*path)
 	pm.pathsByConf = make(map[string]map[*path]struct{})
-	pm.chReloadConf = make(chan map[string]*conf.Path)
 	pm.chSetHLSServer = make(chan pathManagerHLSServer)
 	pm.chClosePath = make(chan *path)
 	pm.chPathReady = make(chan *path)
@@ -126,11 +123,6 @@ func (pm *pathManager) run() {
 outer:
 	for {
 		select {
-		case newPaths := <-pm.chReloadConf:
-			pm.doReloadConf(newPaths)
-
-		case m := <-pm.chSetHLSServer:
-			pm.doSetHLSServer(m)
 
 		case pa := <-pm.chClosePath:
 			pm.doClosePath(pa)
@@ -165,43 +157,6 @@ outer:
 	}
 
 	pm.ctxCancel()
-}
-
-func (pm *pathManager) doReloadConf(newPaths map[string]*conf.Path) {
-	for confName, pathConf := range pm.pathConfs {
-		if newPath, ok := newPaths[confName]; ok {
-			// configuration has changed
-			if !newPath.Equal(pathConf) {
-				if pathConfCanBeUpdated(pathConf, newPath) { // paths associated with the configuration can be updated
-					for pa := range pm.pathsByConf[confName] {
-						go pa.reloadConf(newPath)
-					}
-				} else { // paths associated with the configuration must be recreated
-					for pa := range pm.pathsByConf[confName] {
-						pm.removePath(pa)
-						pa.close()
-						pa.wait() // avoid conflicts between sources
-					}
-				}
-			}
-		} else {
-			// configuration has been deleted, remove associated paths
-			for pa := range pm.pathsByConf[confName] {
-				pm.removePath(pa)
-				pa.close()
-				pa.wait() // avoid conflicts between sources
-			}
-		}
-	}
-
-	pm.pathConfs = newPaths
-
-	// add new paths
-	for pathConfName, pathConf := range pm.pathConfs {
-		if _, ok := pm.paths[pathConfName]; !ok && pathConf.Regexp == nil {
-			pm.createPath(pathConfName, pathConf, pathConfName, nil)
-		}
-	}
 }
 
 func (pm *pathManager) doSetHLSServer(m pathManagerHLSServer) {
@@ -340,14 +295,6 @@ func (pm *pathManager) removePath(pa *path) {
 		delete(pm.pathsByConf, pa.confName)
 	}
 	delete(pm.paths, pa.name)
-}
-
-// ReloadPathConfs is called by core.
-func (pm *pathManager) ReloadPathConfs(pathConfs map[string]*conf.Path) {
-	select {
-	case pm.chReloadConf <- pathConfs:
-	case <-pm.ctx.Done():
-	}
 }
 
 // pathReady is called by path.

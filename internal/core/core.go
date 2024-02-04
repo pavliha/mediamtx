@@ -367,9 +367,6 @@ func (p *Core) closeResources(newConf *conf.Conf, calledByAPI bool) {
 		newConf.WriteQueueSize != p.conf.WriteQueueSize ||
 		newConf.UDPMaxPayloadSize != p.conf.UDPMaxPayloadSize ||
 		closeLogger
-	if !closePathManager && !reflect.DeepEqual(newConf.Paths, p.conf.Paths) {
-		p.pathManager.ReloadPathConfs(newConf.Paths)
-	}
 
 	closeRTSPServer := newConf == nil ||
 		newConf.RTSP != p.conf.RTSP ||

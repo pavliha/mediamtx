@@ -10,7 +10,6 @@ import (
 	"github.com/bluenviron/mediamtx/internal/defs"
 	"github.com/bluenviron/mediamtx/internal/logger"
 	rtspsource "github.com/bluenviron/mediamtx/internal/staticsources/rtsp"
-	webrtcsource "github.com/bluenviron/mediamtx/internal/staticsources/webrtc"
 )
 
 const (
@@ -60,14 +59,6 @@ func (s *staticSourceHandler) initialize() {
 			ReadTimeout:    s.readTimeout,
 			WriteTimeout:   s.writeTimeout,
 			WriteQueueSize: s.writeQueueSize,
-			Parent:         s,
-		}
-
-	case strings.HasPrefix(s.resolvedSource, "whep://") ||
-		strings.HasPrefix(s.resolvedSource, "wheps://"):
-		s.instance = &webrtcsource.Source{
-			ResolvedSource: s.resolvedSource,
-			ReadTimeout:    s.readTimeout,
 			Parent:         s,
 		}
 	}
@@ -178,13 +169,6 @@ func (s *staticSourceHandler) run() {
 			}
 			return
 		}
-	}
-}
-
-func (s *staticSourceHandler) reloadConf(newConf *conf.Path) {
-	select {
-	case s.chReloadConf <- newConf:
-	case <-s.ctx.Done():
 	}
 }
 

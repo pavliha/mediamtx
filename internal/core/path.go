@@ -98,7 +98,6 @@ type path struct {
 	onDemandPublisherCloseTimer    *time.Timer
 
 	// in
-	chReloadConf              chan *conf.Path
 	chStaticSourceSetReady    chan defs.PathSourceStaticSetReadyReq
 	chStaticSourceSetNotReady chan defs.PathSourceStaticSetNotReadyReq
 	chDescribe                chan defs.PathDescribeReq
@@ -124,7 +123,6 @@ func (pa *path) initialize() {
 	pa.onDemandStaticSourceCloseTimer = newEmptyTimer()
 	pa.onDemandPublisherReadyTimer = newEmptyTimer()
 	pa.onDemandPublisherCloseTimer = newEmptyTimer()
-	pa.chReloadConf = make(chan *conf.Path)
 	pa.chStaticSourceSetReady = make(chan defs.PathSourceStaticSetReadyReq)
 	pa.chStaticSourceSetNotReady = make(chan defs.PathSourceStaticSetNotReadyReq)
 	pa.chDescribe = make(chan defs.PathDescribeReq)
@@ -267,9 +265,6 @@ func (pa *path) runInner() error {
 		case <-pa.onDemandPublisherCloseTimer.C:
 			pa.doOnDemandPublisherCloseTimer()
 
-		case newConf := <-pa.chReloadConf:
-			pa.doReloadConf(newConf)
-
 		case req := <-pa.chStaticSourceSetReady:
 			pa.doSourceStaticSetReady(req)
 
@@ -361,17 +356,6 @@ func (pa *path) doOnDemandPublisherReadyTimer() {
 
 func (pa *path) doOnDemandPublisherCloseTimer() {
 	pa.onDemandPublisherStop("not needed by anyone")
-}
-
-func (pa *path) doReloadConf(newConf *conf.Path) {
-	pa.confMutex.Lock()
-	pa.conf = newConf
-	pa.confMutex.Unlock()
-
-	if pa.conf.HasStaticSource() {
-		go pa.source.(*staticSourceHandler).reloadConf(newConf)
-	}
-
 }
 
 func (pa *path) doSourceStaticSetReady(req defs.PathSourceStaticSetReadyReq) {
@@ -809,14 +793,6 @@ func (pa *path) addReaderPost(req defs.PathAddReaderReq) {
 	req.Res <- defs.PathAddReaderRes{
 		Path:   pa,
 		Stream: pa.stream,
-	}
-}
-
-// reloadConf is called by pathManager.
-func (pa *path) reloadConf(newConf *conf.Path) {
-	select {
-	case pa.chReloadConf <- newConf:
-	case <-pa.ctx.Done():
 	}
 }
 
