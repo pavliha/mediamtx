@@ -17,7 +17,6 @@ import (
 // - redirectSource
 type Source interface {
 	logger.Writer
-	APISourceDescribe() APIPathSourceOrReader
 }
 
 // FormatsToCodecs returns the name of codecs of given formats.

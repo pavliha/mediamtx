@@ -226,22 +226,6 @@ func (pconf *Path) validate(conf *Conf, name string) error {
 			return fmt.Errorf("'%s' is not a valid URL", pconf.Source)
 		}
 
-	case strings.HasPrefix(pconf.Source, "rtmp://") ||
-		strings.HasPrefix(pconf.Source, "rtmps://"):
-		u, err := gourl.Parse(pconf.Source)
-		if err != nil {
-			return fmt.Errorf("'%s' is not a valid URL", pconf.Source)
-		}
-
-		if u.User != nil {
-			pass, _ := u.User.Password()
-			user := u.User.Username()
-			if user != "" && pass == "" ||
-				user == "" && pass != "" {
-				return fmt.Errorf("username and password must be both provided")
-			}
-		}
-
 	case strings.HasPrefix(pconf.Source, "whep://") ||
 		strings.HasPrefix(pconf.Source, "wheps://"):
 		_, err := gourl.Parse(pconf.Source)

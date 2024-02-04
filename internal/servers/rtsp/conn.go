@@ -15,7 +15,6 @@ import (
 	"github.com/bluenviron/mediamtx/internal/conf"
 	"github.com/bluenviron/mediamtx/internal/defs"
 	"github.com/bluenviron/mediamtx/internal/externalcmd"
-	"github.com/bluenviron/mediamtx/internal/hooks"
 	"github.com/bluenviron/mediamtx/internal/logger"
 )
 
@@ -24,7 +23,6 @@ const (
 )
 
 type conn struct {
-	isTLS               bool
 	rtspAddress         string
 	authMethods         []headers.AuthMethod
 	readTimeout         conf.StringDuration
@@ -37,11 +35,10 @@ type conn struct {
 	rserver             *gortsplib.Server
 	parent              *Server
 
-	uuid             uuid.UUID
-	created          time.Time
-	onDisconnectHook func()
-	authNonce        string
-	authFailures     int
+	uuid         uuid.UUID
+	created      time.Time
+	authNonce    string
+	authFailures int
 }
 
 func (c *conn) initialize() {
@@ -50,25 +47,6 @@ func (c *conn) initialize() {
 
 	c.Log(logger.Info, "opened")
 
-	desc := defs.APIPathSourceOrReader{
-		Type: func() string {
-			if c.isTLS {
-				return "rtspsConn"
-			}
-			return "conn"
-		}(),
-		ID: c.uuid.String(),
-	}
-
-	c.onDisconnectHook = hooks.OnConnect(hooks.OnConnectParams{
-		Logger:              c,
-		ExternalCmdPool:     c.externalCmdPool,
-		RunOnConnect:        c.runOnConnect,
-		RunOnConnectRestart: c.runOnConnectRestart,
-		RunOnDisconnect:     c.runOnDisconnect,
-		RTSPAddress:         c.rtspAddress,
-		Desc:                desc,
-	})
 }
 
 // Log implements logger.Writer.
@@ -92,8 +70,6 @@ func (c *conn) ip() net.IP {
 // onClose is called by rtspServer.
 func (c *conn) onClose(err error) {
 	c.Log(logger.Info, "closed: %v", err)
-
-	c.onDisconnectHook()
 }
 
 // onRequest is called by rtspServer.
@@ -160,49 +136,9 @@ func (c *conn) onDescribe(ctx *gortsplib.ServerHandlerOnDescribeCtx,
 	}
 
 	var stream *gortsplib.ServerStream
-	if !c.isTLS {
-		stream = res.Stream.RTSPStream(c.rserver)
-	} else {
-		stream = res.Stream.RTSPSStream(c.rserver)
-	}
+	stream = res.Stream.RTSPStream(c.rserver)
 
 	return &base.Response{
 		StatusCode: base.StatusOK,
 	}, stream, nil
-}
-
-func (c *conn) handleAuthError(authErr error) (*base.Response, error) {
-	c.authFailures++
-
-	// VLC with login prompt sends 4 requests:
-	// 1) without credentials
-	// 2) with password but without username
-	// 3) without credentials
-	// 4) with password and username
-	// therefore we must allow up to 3 failures
-	if c.authFailures <= 3 {
-		return &base.Response{
-			StatusCode: base.StatusUnauthorized,
-			Header: base.Header{
-				"WWW-Authenticate": auth.GenerateWWWAuthenticate(c.authMethods, "IPCAM", c.authNonce),
-			},
-		}, nil
-	}
-
-	// wait some seconds to mitigate brute force attacks
-	<-time.After(pauseAfterAuthError)
-
-	return &base.Response{
-		StatusCode: base.StatusUnauthorized,
-	}, authErr
-}
-
-func (c *conn) apiItem() *defs.APIRTSPConn {
-	return &defs.APIRTSPConn{
-		ID:            c.uuid,
-		Created:       c.created,
-		RemoteAddr:    c.remoteAddr().String(),
-		BytesReceived: c.rconn.BytesReceived(),
-		BytesSent:     c.rconn.BytesSent(),
-	}
 }

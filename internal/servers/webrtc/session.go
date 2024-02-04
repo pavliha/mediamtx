@@ -21,7 +21,6 @@ import (
 	"github.com/bluenviron/mediamtx/internal/asyncwriter"
 	"github.com/bluenviron/mediamtx/internal/defs"
 	"github.com/bluenviron/mediamtx/internal/externalcmd"
-	"github.com/bluenviron/mediamtx/internal/hooks"
 	"github.com/bluenviron/mediamtx/internal/logger"
 	"github.com/bluenviron/mediamtx/internal/protocols/webrtc"
 	"github.com/bluenviron/mediamtx/internal/stream"
@@ -394,16 +393,6 @@ func (s *session) runRead() (int, error) {
 	s.Log(logger.Info, "is reading from path '%s', %s",
 		res.Path.Name(), defs.FormatsInfo(res.Stream.FormatsForReader(writer)))
 
-	onUnreadHook := hooks.OnRead(hooks.OnReadParams{
-		Logger:          s,
-		ExternalCmdPool: s.externalCmdPool,
-		Conf:            res.Path.SafeConf(),
-		ExternalCmdEnv:  res.Path.ExternalCmdEnv(),
-		Reader:          s.APIReaderDescribe(),
-		Query:           s.req.query,
-	})
-	defer onUnreadHook()
-
 	writer.Start()
 
 	select {
@@ -466,56 +455,5 @@ func (s *session) addCandidates(
 
 	case <-s.ctx.Done():
 		return webRTCAddSessionCandidatesRes{err: fmt.Errorf("terminated")}
-	}
-}
-
-// APIReaderDescribe implements reader.
-func (s *session) APIReaderDescribe() defs.APIPathSourceOrReader {
-	return defs.APIPathSourceOrReader{
-		Type: "webrtcSession",
-		ID:   s.uuid.String(),
-	}
-}
-
-// APISourceDescribe implements source.
-func (s *session) APISourceDescribe() defs.APIPathSourceOrReader {
-	return s.APIReaderDescribe()
-}
-
-func (s *session) apiItem() *defs.APIWebRTCSession {
-	s.mutex.RLock()
-	defer s.mutex.RUnlock()
-
-	peerConnectionEstablished := false
-	localCandidate := ""
-	remoteCandidate := ""
-	bytesReceived := uint64(0)
-	bytesSent := uint64(0)
-
-	if s.pc != nil {
-		peerConnectionEstablished = true
-		localCandidate = s.pc.LocalCandidate()
-		remoteCandidate = s.pc.RemoteCandidate()
-		bytesReceived = s.pc.BytesReceived()
-		bytesSent = s.pc.BytesSent()
-	}
-
-	return &defs.APIWebRTCSession{
-		ID:                        s.uuid,
-		Created:                   s.created,
-		RemoteAddr:                s.req.remoteAddr,
-		PeerConnectionEstablished: peerConnectionEstablished,
-		LocalCandidate:            localCandidate,
-		RemoteCandidate:           remoteCandidate,
-		State: func() defs.APIWebRTCSessionState {
-			if s.req.publish {
-				return defs.APIWebRTCSessionStatePublish
-			}
-			return defs.APIWebRTCSessionStateRead
-		}(),
-		Path:          s.req.pathName,
-		Query:         s.req.query,
-		BytesReceived: bytesReceived,
-		BytesSent:     bytesSent,
 	}
 }

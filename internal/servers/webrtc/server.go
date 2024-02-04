@@ -11,7 +11,6 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"sort"
 	"strconv"
 	"sync"
 	"time"
@@ -357,43 +356,6 @@ outer:
 
 			req.res <- webRTCDeleteSessionRes{}
 
-		case req := <-s.chAPISessionsList:
-			data := &defs.APIWebRTCSessionList{
-				Items: []*defs.APIWebRTCSession{},
-			}
-
-			for sx := range s.sessions {
-				data.Items = append(data.Items, sx.apiItem())
-			}
-
-			sort.Slice(data.Items, func(i, j int) bool {
-				return data.Items[i].Created.Before(data.Items[j].Created)
-			})
-
-			req.res <- serverAPISessionsListRes{data: data}
-
-		case req := <-s.chAPISessionsGet:
-			sx := s.findSessionByUUID(req.uuid)
-			if sx == nil {
-				req.res <- serverAPISessionsGetRes{err: ErrSessionNotFound}
-				continue
-			}
-
-			req.res <- serverAPISessionsGetRes{data: sx.apiItem()}
-
-		case req := <-s.chAPIConnsKick:
-			sx := s.findSessionByUUID(req.uuid)
-			if sx == nil {
-				req.res <- serverAPISessionsKickRes{err: ErrSessionNotFound}
-				continue
-			}
-
-			delete(s.sessions, sx)
-			delete(s.sessionsBySecret, sx.secret)
-			sx.Close()
-
-			req.res <- serverAPISessionsKickRes{}
-
 		case <-s.ctx.Done():
 			break outer
 		}
@@ -503,56 +465,6 @@ func (s *Server) deleteSession(req webRTCDeleteSessionReq) error {
 	req.res = make(chan webRTCDeleteSessionRes)
 	select {
 	case s.chDeleteSession <- req:
-		res := <-req.res
-		return res.err
-
-	case <-s.ctx.Done():
-		return fmt.Errorf("terminated")
-	}
-}
-
-// APISessionsList is called by api.
-func (s *Server) APISessionsList() (*defs.APIWebRTCSessionList, error) {
-	req := serverAPISessionsListReq{
-		res: make(chan serverAPISessionsListRes),
-	}
-
-	select {
-	case s.chAPISessionsList <- req:
-		res := <-req.res
-		return res.data, res.err
-
-	case <-s.ctx.Done():
-		return nil, fmt.Errorf("terminated")
-	}
-}
-
-// APISessionsGet is called by api.
-func (s *Server) APISessionsGet(uuid uuid.UUID) (*defs.APIWebRTCSession, error) {
-	req := serverAPISessionsGetReq{
-		uuid: uuid,
-		res:  make(chan serverAPISessionsGetRes),
-	}
-
-	select {
-	case s.chAPISessionsGet <- req:
-		res := <-req.res
-		return res.data, res.err
-
-	case <-s.ctx.Done():
-		return nil, fmt.Errorf("terminated")
-	}
-}
-
-// APISessionsKick is called by api.
-func (s *Server) APISessionsKick(uuid uuid.UUID) error {
-	req := serverAPISessionsKickReq{
-		uuid: uuid,
-		res:  make(chan serverAPISessionsKickRes),
-	}
-
-	select {
-	case s.chAPIConnsKick <- req:
 		res := <-req.res
 		return res.err
 

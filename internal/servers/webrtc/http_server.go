@@ -33,9 +33,7 @@ var (
 )
 
 func writeError(ctx *gin.Context, statusCode int, err error) {
-	ctx.JSON(statusCode, &defs.APIError{
-		Error: err.Error(),
-	})
+	ctx.JSON(statusCode, err.Error())
 }
 
 func sessionLocation(publish bool, secret uuid.UUID) string {

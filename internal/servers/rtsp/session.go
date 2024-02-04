@@ -17,7 +17,6 @@ import (
 	"github.com/bluenviron/mediamtx/internal/conf"
 	"github.com/bluenviron/mediamtx/internal/defs"
 	"github.com/bluenviron/mediamtx/internal/externalcmd"
-	"github.com/bluenviron/mediamtx/internal/hooks"
 	"github.com/bluenviron/mediamtx/internal/logger"
 	"github.com/bluenviron/mediamtx/internal/stream"
 )
@@ -253,15 +252,6 @@ func (s *session) onPlay(_ *gortsplib.ServerHandlerOnPlayCtx) (*base.Response, e
 			s.rsession.SetuppedTransport(),
 			defs.MediasInfo(s.rsession.SetuppedMedias()))
 
-		s.onUnreadHook = hooks.OnRead(hooks.OnReadParams{
-			Logger:          s,
-			ExternalCmdPool: s.externalCmdPool,
-			Conf:            s.path.SafeConf(),
-			ExternalCmdEnv:  s.path.ExternalCmdEnv(),
-			Reader:          s.APIReaderDescribe(),
-			Query:           s.rsession.SetuppedQuery(),
-		})
-
 		s.mutex.Lock()
 		s.state = gortsplib.ServerSessionStatePlay
 		s.transport = s.rsession.SetuppedTransport()
@@ -336,71 +326,4 @@ func (s *session) onPause(_ *gortsplib.ServerHandlerOnPauseCtx) (*base.Response,
 	return &base.Response{
 		StatusCode: base.StatusOK,
 	}, nil
-}
-
-// APIReaderDescribe implements reader.
-func (s *session) APIReaderDescribe() defs.APIPathSourceOrReader {
-	return defs.APIPathSourceOrReader{
-		Type: func() string {
-			if s.isTLS {
-				return "rtspsSession"
-			}
-			return "rtspSession"
-		}(),
-		ID: s.uuid.String(),
-	}
-}
-
-// APISourceDescribe implements source.
-func (s *session) APISourceDescribe() defs.APIPathSourceOrReader {
-	return s.APIReaderDescribe()
-}
-
-// onPacketLost is called by rtspServer.
-func (s *session) onPacketLost(ctx *gortsplib.ServerHandlerOnPacketLostCtx) {
-	s.decodeErrLogger.Log(logger.Warn, ctx.Error.Error())
-}
-
-// onDecodeError is called by rtspServer.
-func (s *session) onDecodeError(ctx *gortsplib.ServerHandlerOnDecodeErrorCtx) {
-	s.decodeErrLogger.Log(logger.Warn, ctx.Error.Error())
-}
-
-// onStreamWriteError is called by rtspServer.
-func (s *session) onStreamWriteError(ctx *gortsplib.ServerHandlerOnStreamWriteErrorCtx) {
-	s.writeErrLogger.Log(logger.Warn, ctx.Error.Error())
-}
-
-func (s *session) apiItem() *defs.APIRTSPSession {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-
-	return &defs.APIRTSPSession{
-		ID:         s.uuid,
-		Created:    s.created,
-		RemoteAddr: s.remoteAddr().String(),
-		State: func() defs.APIRTSPSessionState {
-			switch s.state {
-			case gortsplib.ServerSessionStatePrePlay,
-				gortsplib.ServerSessionStatePlay:
-				return defs.APIRTSPSessionStateRead
-
-			case gortsplib.ServerSessionStatePreRecord,
-				gortsplib.ServerSessionStateRecord:
-				return defs.APIRTSPSessionStatePublish
-			}
-			return defs.APIRTSPSessionStateIdle
-		}(),
-		Path:  s.pathName,
-		Query: s.query,
-		Transport: func() *string {
-			if s.transport == nil {
-				return nil
-			}
-			v := s.transport.String()
-			return &v
-		}(),
-		BytesReceived: s.rsession.BytesReceived(),
-		BytesSent:     s.rsession.BytesSent(),
-	}
 }

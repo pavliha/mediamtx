@@ -172,11 +172,6 @@ func (s *staticSourceHandler) run() {
 	}
 }
 
-// APISourceDescribe instanceements source.
-func (s *staticSourceHandler) APISourceDescribe() defs.APIPathSourceOrReader {
-	return s.instance.APISourceDescribe()
-}
-
 // setReady is called by a staticSource.
 func (s *staticSourceHandler) SetReady(req defs.PathSourceStaticSetReadyReq) defs.PathSourceStaticSetReadyRes {
 	req.Res = make(chan defs.PathSourceStaticSetReadyRes)

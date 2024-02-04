@@ -11,7 +11,6 @@ import (
 type StaticSource interface {
 	logger.Writer
 	Run(StaticSourceRunParams) error
-	APISourceDescribe() APIPathSourceOrReader
 }
 
 // StaticSourceParent is the parent of a static source.

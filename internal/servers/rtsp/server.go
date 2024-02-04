@@ -6,15 +6,12 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
-	"sort"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/bluenviron/gortsplib/v4"
 	"github.com/bluenviron/gortsplib/v4/pkg/base"
-	"github.com/bluenviron/gortsplib/v4/pkg/liberrors"
-	"github.com/google/uuid"
 
 	"github.com/bluenviron/mediamtx/internal/conf"
 	"github.com/bluenviron/mediamtx/internal/defs"
@@ -174,7 +171,6 @@ outer:
 // OnConnOpen implements gortsplib.ServerHandlerOnConnOpen.
 func (s *Server) OnConnOpen(ctx *gortsplib.ServerHandlerOnConnOpenCtx) {
 	c := &conn{
-		isTLS:               s.IsTLS,
 		rtspAddress:         s.RTSPAddress,
 		readTimeout:         s.ReadTimeout,
 		runOnConnect:        s.RunOnConnect,
@@ -244,191 +240,4 @@ func (s *Server) OnSessionClose(ctx *gortsplib.ServerHandlerOnSessionCloseCtx) {
 	if se != nil {
 		se.onClose(ctx.Error)
 	}
-}
-
-// OnDescribe implements gortsplib.ServerHandlerOnDescribe.
-func (s *Server) OnDescribe(ctx *gortsplib.ServerHandlerOnDescribeCtx,
-) (*base.Response, *gortsplib.ServerStream, error) {
-	c := ctx.Conn.UserData().(*conn)
-	return c.onDescribe(ctx)
-}
-
-// OnAnnounce implements gortsplib.ServerHandlerOnAnnounce.
-func (s *Server) OnAnnounce(ctx *gortsplib.ServerHandlerOnAnnounceCtx) (*base.Response, error) {
-	c := ctx.Conn.UserData().(*conn)
-	se := ctx.Session.UserData().(*session)
-	return se.onAnnounce(c, ctx)
-}
-
-// OnSetup implements gortsplib.ServerHandlerOnSetup.
-func (s *Server) OnSetup(ctx *gortsplib.ServerHandlerOnSetupCtx) (*base.Response, *gortsplib.ServerStream, error) {
-	c := ctx.Conn.UserData().(*conn)
-	se := ctx.Session.UserData().(*session)
-	return se.onSetup(c, ctx)
-}
-
-// OnPlay implements gortsplib.ServerHandlerOnPlay.
-func (s *Server) OnPlay(ctx *gortsplib.ServerHandlerOnPlayCtx) (*base.Response, error) {
-	se := ctx.Session.UserData().(*session)
-	return se.onPlay(ctx)
-}
-
-// OnRecord implements gortsplib.ServerHandlerOnRecord.
-func (s *Server) OnRecord(ctx *gortsplib.ServerHandlerOnRecordCtx) (*base.Response, error) {
-	se := ctx.Session.UserData().(*session)
-	return se.onRecord(ctx)
-}
-
-// OnPause implements gortsplib.ServerHandlerOnPause.
-func (s *Server) OnPause(ctx *gortsplib.ServerHandlerOnPauseCtx) (*base.Response, error) {
-	se := ctx.Session.UserData().(*session)
-	return se.onPause(ctx)
-}
-
-// OnPacketLost implements gortsplib.ServerHandlerOnDecodeError.
-func (s *Server) OnPacketLost(ctx *gortsplib.ServerHandlerOnPacketLostCtx) {
-	se := ctx.Session.UserData().(*session)
-	se.onPacketLost(ctx)
-}
-
-// OnDecodeError implements gortsplib.ServerHandlerOnDecodeError.
-func (s *Server) OnDecodeError(ctx *gortsplib.ServerHandlerOnDecodeErrorCtx) {
-	se := ctx.Session.UserData().(*session)
-	se.onDecodeError(ctx)
-}
-
-// OnStreamWriteError implements gortsplib.ServerHandlerOnStreamWriteError.
-func (s *Server) OnStreamWriteError(ctx *gortsplib.ServerHandlerOnStreamWriteErrorCtx) {
-	se := ctx.Session.UserData().(*session)
-	se.onStreamWriteError(ctx)
-}
-
-func (s *Server) findConnByUUID(uuid uuid.UUID) *conn {
-	for _, c := range s.conns {
-		if c.uuid == uuid {
-			return c
-		}
-	}
-	return nil
-}
-
-func (s *Server) findSessionByUUID(uuid uuid.UUID) (*gortsplib.ServerSession, *session) {
-	for key, sx := range s.sessions {
-		if sx.uuid == uuid {
-			return key, sx
-		}
-	}
-	return nil, nil
-}
-
-// APIConnsList is called by api and metrics.
-func (s *Server) APIConnsList() (*defs.APIRTSPConnsList, error) {
-	select {
-	case <-s.ctx.Done():
-		return nil, fmt.Errorf("terminated")
-	default:
-	}
-
-	s.mutex.RLock()
-	defer s.mutex.RUnlock()
-
-	data := &defs.APIRTSPConnsList{
-		Items: []*defs.APIRTSPConn{},
-	}
-
-	for _, c := range s.conns {
-		data.Items = append(data.Items, c.apiItem())
-	}
-
-	sort.Slice(data.Items, func(i, j int) bool {
-		return data.Items[i].Created.Before(data.Items[j].Created)
-	})
-
-	return data, nil
-}
-
-// APIConnsGet is called by api.
-func (s *Server) APIConnsGet(uuid uuid.UUID) (*defs.APIRTSPConn, error) {
-	select {
-	case <-s.ctx.Done():
-		return nil, fmt.Errorf("terminated")
-	default:
-	}
-
-	s.mutex.RLock()
-	defer s.mutex.RUnlock()
-
-	conn := s.findConnByUUID(uuid)
-	if conn == nil {
-		return nil, ErrConnNotFound
-	}
-
-	return conn.apiItem(), nil
-}
-
-// APISessionsList is called by api and metrics.
-func (s *Server) APISessionsList() (*defs.APIRTSPSessionList, error) {
-	select {
-	case <-s.ctx.Done():
-		return nil, fmt.Errorf("terminated")
-	default:
-	}
-
-	s.mutex.RLock()
-	defer s.mutex.RUnlock()
-
-	data := &defs.APIRTSPSessionList{
-		Items: []*defs.APIRTSPSession{},
-	}
-
-	for _, s := range s.sessions {
-		data.Items = append(data.Items, s.apiItem())
-	}
-
-	sort.Slice(data.Items, func(i, j int) bool {
-		return data.Items[i].Created.Before(data.Items[j].Created)
-	})
-
-	return data, nil
-}
-
-// APISessionsGet is called by api.
-func (s *Server) APISessionsGet(uuid uuid.UUID) (*defs.APIRTSPSession, error) {
-	select {
-	case <-s.ctx.Done():
-		return nil, fmt.Errorf("terminated")
-	default:
-	}
-
-	s.mutex.RLock()
-	defer s.mutex.RUnlock()
-
-	_, sx := s.findSessionByUUID(uuid)
-	if sx == nil {
-		return nil, ErrSessionNotFound
-	}
-
-	return sx.apiItem(), nil
-}
-
-// APISessionsKick is called by api.
-func (s *Server) APISessionsKick(uuid uuid.UUID) error {
-	select {
-	case <-s.ctx.Done():
-		return fmt.Errorf("terminated")
-	default:
-	}
-
-	s.mutex.RLock()
-	defer s.mutex.RUnlock()
-
-	key, sx := s.findSessionByUUID(uuid)
-	if sx == nil {
-		return ErrSessionNotFound
-	}
-
-	sx.Close()
-	delete(s.sessions, key)
-	sx.onClose(liberrors.ErrServerTerminated{})
-	return nil
 }

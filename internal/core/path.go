@@ -15,7 +15,6 @@ import (
 	"github.com/bluenviron/mediamtx/internal/conf"
 	"github.com/bluenviron/mediamtx/internal/defs"
 	"github.com/bluenviron/mediamtx/internal/externalcmd"
-	"github.com/bluenviron/mediamtx/internal/hooks"
 	"github.com/bluenviron/mediamtx/internal/logger"
 	"github.com/bluenviron/mediamtx/internal/stream"
 )
@@ -188,13 +187,6 @@ func (pa *path) run() {
 		}
 	}
 
-	onUnInitHook := hooks.OnInit(hooks.OnInitParams{
-		Logger:          pa,
-		ExternalCmdPool: pa.externalCmdPool,
-		Conf:            pa.conf,
-		ExternalCmdEnv:  pa.ExternalCmdEnv(),
-	})
-
 	err := pa.runInner()
 
 	// call before destroying context
@@ -206,8 +198,6 @@ func (pa *path) run() {
 	pa.onDemandStaticSourceCloseTimer.Stop()
 	pa.onDemandPublisherReadyTimer.Stop()
 	pa.onDemandPublisherCloseTimer.Stop()
-
-	onUnInitHook()
 
 	for _, req := range pa.describeRequestsOnHold {
 		req.Res <- defs.PathDescribeRes{Err: fmt.Errorf("terminated")}
@@ -311,9 +301,6 @@ func (pa *path) runInner() error {
 
 		case req := <-pa.chRemoveReader:
 			pa.doRemoveReader(req)
-
-		case req := <-pa.chAPIPathsGet:
-			pa.doAPIPathsGet(req)
 
 		case <-pa.ctx.Done():
 			return fmt.Errorf("terminated")
@@ -549,55 +536,6 @@ func (pa *path) doRemoveReader(req defs.PathRemoveReaderReq) {
 	}
 }
 
-func (pa *path) doAPIPathsGet(req pathAPIPathsGetReq) {
-	req.res <- pathAPIPathsGetRes{
-		data: &defs.APIPath{
-			Name:     pa.name,
-			ConfName: pa.confName,
-			Source: func() *defs.APIPathSourceOrReader {
-				if pa.source == nil {
-					return nil
-				}
-				v := pa.source.APISourceDescribe()
-				return &v
-			}(),
-			Ready: pa.stream != nil,
-			ReadyTime: func() *time.Time {
-				if pa.stream == nil {
-					return nil
-				}
-				v := pa.readyTime
-				return &v
-			}(),
-			Tracks: func() []string {
-				if pa.stream == nil {
-					return []string{}
-				}
-				return defs.MediasToCodecs(pa.stream.Desc().Medias)
-			}(),
-			BytesReceived: func() uint64 {
-				if pa.stream == nil {
-					return 0
-				}
-				return pa.stream.BytesReceived()
-			}(),
-			BytesSent: func() uint64 {
-				if pa.stream == nil {
-					return 0
-				}
-				return pa.stream.BytesSent()
-			}(),
-			Readers: func() []defs.APIPathSourceOrReader {
-				ret := []defs.APIPathSourceOrReader{}
-				for r := range pa.readers {
-					ret = append(ret, r.APIReaderDescribe())
-				}
-				return ret
-			}(),
-		},
-	}
-}
-
 func (pa *path) SafeConf() *conf.Path {
 	pa.confMutex.RLock()
 	defer pa.confMutex.RUnlock()
@@ -657,14 +595,6 @@ func (pa *path) onDemandStaticSourceStop(reason string) {
 }
 
 func (pa *path) onDemandPublisherStart(query string) {
-	pa.onUnDemandHook = hooks.OnDemand(hooks.OnDemandParams{
-		Logger:          pa,
-		ExternalCmdPool: pa.externalCmdPool,
-		Conf:            pa.conf,
-		ExternalCmdEnv:  pa.ExternalCmdEnv(),
-		Query:           query,
-	})
-
 	pa.onDemandPublisherReadyTimer.Stop()
 	pa.onDemandPublisherReadyTimer = time.NewTimer(time.Duration(pa.conf.RunOnDemandStartTimeout))
 
@@ -703,15 +633,6 @@ func (pa *path) setReady(desc *description.Session, allocateEncoder bool) error 
 	}
 
 	pa.readyTime = time.Now()
-
-	pa.onNotReadyHook = hooks.OnReady(hooks.OnReadyParams{
-		Logger:          pa,
-		ExternalCmdPool: pa.externalCmdPool,
-		Conf:            pa.conf,
-		ExternalCmdEnv:  pa.ExternalCmdEnv(),
-		Desc:            pa.source.APISourceDescribe(),
-		Query:           pa.publisherQuery,
-	})
 
 	pa.parent.pathReady(pa)
 
