@@ -16,7 +16,6 @@ import (
 	"github.com/bluenviron/gortsplib/v4/pkg/headers"
 
 	"github.com/bluenviron/mediamtx/internal/conf/decrypt"
-	"github.com/bluenviron/mediamtx/internal/conf/env"
 	"github.com/bluenviron/mediamtx/internal/conf/yaml"
 	"github.com/bluenviron/mediamtx/internal/logger"
 )
@@ -185,16 +184,6 @@ func Load(fpath string, defaultConfPaths []string) (*Conf, string, error) {
 	conf := &Conf{}
 
 	fpath, err := conf.loadFromFile(fpath, defaultConfPaths)
-	if err != nil {
-		return nil, "", err
-	}
-
-	err = env.Load("RTSP", conf) // legacy prefix
-	if err != nil {
-		return nil, "", err
-	}
-
-	err = env.Load("MTX", conf)
 	if err != nil {
 		return nil, "", err
 	}

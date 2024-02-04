@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"reflect"
 	"strings"
-
-	"github.com/bluenviron/mediamtx/internal/conf/env"
 )
 
 var optionalPathValuesType = func() reflect.Type {
@@ -54,14 +52,6 @@ func (p *OptionalPath) UnmarshalJSON(b []byte) error {
 	d := json.NewDecoder(bytes.NewReader(b))
 	d.DisallowUnknownFields()
 	return d.Decode(p.Values)
-}
-
-// UnmarshalEnv implements env.Unmarshaler.
-func (p *OptionalPath) UnmarshalEnv(prefix string, _ string) error {
-	if p.Values == nil {
-		p.Values = newOptionalPathValues()
-	}
-	return env.Load(prefix, p.Values)
 }
 
 // MarshalJSON implements json.Marshaler.
