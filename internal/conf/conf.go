@@ -15,7 +15,6 @@ import (
 	"github.com/bluenviron/gortsplib/v4"
 	"github.com/bluenviron/gortsplib/v4/pkg/headers"
 
-	"github.com/bluenviron/mediamtx/internal/conf/decrypt"
 	"github.com/bluenviron/mediamtx/internal/conf/yaml"
 	"github.com/bluenviron/mediamtx/internal/logger"
 )
@@ -211,20 +210,6 @@ func (conf *Conf) loadFromFile(fpath string, defaultConfPaths []string) (string,
 	byts, err := os.ReadFile(fpath)
 	if err != nil {
 		return "", err
-	}
-
-	if key, ok := os.LookupEnv("RTSP_CONFKEY"); ok { // legacy format
-		byts, err = decrypt.Decrypt(key, byts)
-		if err != nil {
-			return "", err
-		}
-	}
-
-	if key, ok := os.LookupEnv("MTX_CONFKEY"); ok {
-		byts, err = decrypt.Decrypt(key, byts)
-		if err != nil {
-			return "", err
-		}
 	}
 
 	err = yaml.Load(byts, conf)
