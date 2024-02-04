@@ -5,14 +5,12 @@ import (
 	"fmt"
 
 	"github.com/bluenviron/gortsplib/v4/pkg/ringbuffer"
-
-	"github.com/bluenviron/mediamtx/internal/logger"
+	"github.com/sirupsen/logrus"
 )
 
 // Writer is an asynchronous writer.
 type Writer struct {
-	writeErrLogger logger.Writer
-	buffer         *ringbuffer.RingBuffer
+	buffer *ringbuffer.RingBuffer
 
 	// out
 	err chan error
@@ -21,14 +19,12 @@ type Writer struct {
 // New allocates a Writer.
 func New(
 	queueSize int,
-	parent logger.Writer,
 ) *Writer {
 	buffer, _ := ringbuffer.New(uint64(queueSize))
 
 	return &Writer{
-		writeErrLogger: logger.NewLimitedLogger(parent),
-		buffer:         buffer,
-		err:            make(chan error),
+		buffer: buffer,
+		err:    make(chan error),
 	}
 }
 
@@ -70,6 +66,6 @@ func (w *Writer) runInner() error {
 func (w *Writer) Push(cb func() error) {
 	ok := w.buffer.Push(cb)
 	if !ok {
-		w.writeErrLogger.Log(logger.Warn, "write queue is full")
+		logrus.Error("[asyncwriter] write queue is full")
 	}
 }

@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"regexp"
 	"strings"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -68,7 +67,6 @@ func (s *httpServer) initialize() error {
 	s.inner, err = httpserv.NewWrappedServer(
 		network,
 		address,
-		time.Duration(s.readTimeout),
 		router,
 		s,
 	)

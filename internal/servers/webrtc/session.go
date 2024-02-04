@@ -343,7 +343,7 @@ func (s *session) runRead() (int, error) {
 	}
 	defer pc.Close()
 
-	writer := asyncwriter.New(WRITE_QUEUE_SIZE, s)
+	writer := asyncwriter.New(WRITE_QUEUE_SIZE)
 
 	videoTrack, videoSetup := findVideoTrack(res.Stream, writer)
 

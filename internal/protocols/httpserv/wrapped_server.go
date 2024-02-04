@@ -33,7 +33,6 @@ type WrappedServer struct {
 func NewWrappedServer(
 	network string,
 	address string,
-	readTimeout time.Duration,
 	handler http.Handler,
 	parent logger.Writer,
 ) (*WrappedServer, error) {
@@ -53,7 +52,7 @@ func NewWrappedServer(
 		ln: ln,
 		inner: &http.Server{
 			Handler:           h,
-			ReadHeaderTimeout: readTimeout,
+			ReadHeaderTimeout: 10 * time.Second,
 			ErrorLog:          log.New(&nilWriter{}, "", 0),
 		},
 	}
