@@ -3,7 +3,6 @@ package webrtc
 import (
 	"context"
 	"encoding/hex"
-	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -193,19 +192,10 @@ func (s *session) runPublish() (int, error) {
 			IP:      net.ParseIP(ip),
 			User:    s.req.user,
 			Pass:    s.req.pass,
-			Proto:   defs.AuthProtocolWebRTC,
 			ID:      &s.uuid,
 		},
 	})
 	if res.Err != nil {
-		var terr defs.AuthenticationError
-		if errors.As(res.Err, &terr) {
-			// wait some seconds to mitigate brute force attacks
-			<-time.After(pauseAfterAuthError)
-
-			return http.StatusUnauthorized, res.Err
-		}
-
 		return http.StatusBadRequest, res.Err
 	}
 
@@ -324,17 +314,10 @@ func (s *session) runRead() (int, error) {
 			IP:    net.ParseIP(ip),
 			User:  s.req.user,
 			Pass:  s.req.pass,
-			Proto: defs.AuthProtocolWebRTC,
 			ID:    &s.uuid,
 		},
 	})
 	if res.Err != nil {
-		var terr defs.AuthenticationError
-		if errors.As(res.Err, &terr) {
-			// wait some seconds to mitigate brute force attacks
-			<-time.After(pauseAfterAuthError)
-			return http.StatusUnauthorized, res.Err
-		}
 
 		if strings.HasPrefix(res.Err.Error(), "no one is publishing") {
 			return http.StatusNotFound, res.Err

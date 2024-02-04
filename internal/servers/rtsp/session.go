@@ -117,7 +117,6 @@ func (s *session) onAnnounce(c *conn, ctx *gortsplib.ServerHandlerOnAnnounceCtx)
 			Query:       ctx.Query,
 			Publish:     true,
 			IP:          c.ip(),
-			Proto:       defs.AuthProtocolRTSP,
 			ID:          &c.uuid,
 			RTSPRequest: ctx.Request,
 			RTSPBaseURL: nil,
@@ -126,11 +125,6 @@ func (s *session) onAnnounce(c *conn, ctx *gortsplib.ServerHandlerOnAnnounceCtx)
 	})
 
 	if res.Err != nil {
-		var terr defs.AuthenticationError
-		if errors.As(res.Err, &terr) {
-			return c.handleAuthError(terr)
-		}
-
 		return &base.Response{
 			StatusCode: base.StatusBadRequest,
 		}, res.Err
@@ -202,7 +196,6 @@ func (s *session) onSetup(c *conn, ctx *gortsplib.ServerHandlerOnSetupCtx,
 				Name:        ctx.Path,
 				Query:       ctx.Query,
 				IP:          c.ip(),
-				Proto:       defs.AuthProtocolRTSP,
 				ID:          &c.uuid,
 				RTSPRequest: ctx.Request,
 				RTSPBaseURL: baseURL,
@@ -211,12 +204,6 @@ func (s *session) onSetup(c *conn, ctx *gortsplib.ServerHandlerOnSetupCtx,
 		})
 
 		if res.Err != nil {
-			var terr defs.AuthenticationError
-			if errors.As(res.Err, &terr) {
-				res, err := c.handleAuthError(terr)
-				return res, nil, err
-			}
-
 			var terr2 defs.PathNoOnePublishingError
 			if errors.As(res.Err, &terr2) {
 				return &base.Response{

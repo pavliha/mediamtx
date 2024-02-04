@@ -45,7 +45,6 @@ type PathAccessRequest struct {
 	IP          net.IP
 	User        string
 	Pass        string
-	Proto       AuthProtocol
 	ID          *uuid.UUID
 	RTSPRequest *base.Request
 	RTSPBaseURL *base.URL

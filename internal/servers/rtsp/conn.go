@@ -131,7 +131,6 @@ func (c *conn) onDescribe(ctx *gortsplib.ServerHandlerOnDescribeCtx,
 			Name:        ctx.Path,
 			Query:       ctx.Query,
 			IP:          c.ip(),
-			Proto:       defs.AuthProtocolRTSP,
 			ID:          &c.uuid,
 			RTSPRequest: ctx.Request,
 			RTSPNonce:   c.authNonce,
@@ -139,12 +138,6 @@ func (c *conn) onDescribe(ctx *gortsplib.ServerHandlerOnDescribeCtx,
 	})
 
 	if res.Err != nil {
-		var terr defs.AuthenticationError
-		if errors.As(res.Err, &terr) {
-			res, err := c.handleAuthError(terr)
-			return res, nil, err
-		}
-
 		var terr2 defs.PathNoOnePublishingError
 		if errors.As(res.Err, &terr2) {
 			return &base.Response{

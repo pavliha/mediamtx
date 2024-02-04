@@ -12,14 +12,6 @@ import (
 	"github.com/bluenviron/mediamtx/internal/logger"
 )
 
-func pathConfCanBeUpdated(oldPathConf *conf.Path, newPathConf *conf.Path) bool {
-	clone := oldPathConf.Clone()
-
-	clone.Record = newPathConf.Record
-
-	return newPathConf.Equal(clone)
-}
-
 type pathManagerHLSServer interface {
 	PathReady(defs.Path)
 	PathNotReady(defs.Path)
@@ -141,10 +133,6 @@ outer:
 	}
 
 	pm.ctxCancel()
-}
-
-func (pm *pathManager) doSetHLSServer(m pathManagerHLSServer) {
-	pm.hlsManager = m
 }
 
 func (pm *pathManager) doClosePath(pa *path) {
@@ -411,28 +399,6 @@ func (pm *pathManager) APIPathsList() (*defs.APIPathList, error) {
 		})
 
 		return res.data, nil
-
-	case <-pm.ctx.Done():
-		return nil, fmt.Errorf("terminated")
-	}
-}
-
-// APIPathsGet is called by api.
-func (pm *pathManager) APIPathsGet(name string) (*defs.APIPath, error) {
-	req := pathAPIPathsGetReq{
-		name: name,
-		res:  make(chan pathAPIPathsGetRes),
-	}
-
-	select {
-	case pm.chAPIPathsGet <- req:
-		res := <-req.res
-		if res.err != nil {
-			return nil, res.err
-		}
-
-		data, err := res.path.APIPathsGet(req)
-		return data, err
 
 	case <-pm.ctx.Done():
 		return nil, fmt.Errorf("terminated")
