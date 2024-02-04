@@ -16,20 +16,18 @@ import (
 
 	"github.com/bluenviron/mediamtx/internal/conf"
 	"github.com/bluenviron/mediamtx/internal/defs"
-	"github.com/bluenviron/mediamtx/internal/externalcmd"
 	"github.com/bluenviron/mediamtx/internal/logger"
 	"github.com/bluenviron/mediamtx/internal/stream"
 )
 
 type session struct {
-	isTLS           bool
-	protocols       map[conf.Protocol]struct{}
-	rsession        *gortsplib.ServerSession
-	rconn           *gortsplib.ServerConn
-	rserver         *gortsplib.Server
-	externalCmdPool *externalcmd.Pool
-	pathManager     defs.PathManager
-	parent          *Server
+	isTLS       bool
+	protocols   map[conf.Protocol]struct{}
+	rsession    *gortsplib.ServerSession
+	rconn       *gortsplib.ServerConn
+	rserver     *gortsplib.Server
+	pathManager defs.PathManager
+	parent      *Server
 
 	uuid            uuid.UUID
 	created         time.Time

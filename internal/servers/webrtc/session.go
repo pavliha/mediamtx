@@ -20,7 +20,6 @@ import (
 
 	"github.com/bluenviron/mediamtx/internal/asyncwriter"
 	"github.com/bluenviron/mediamtx/internal/defs"
-	"github.com/bluenviron/mediamtx/internal/externalcmd"
 	"github.com/bluenviron/mediamtx/internal/logger"
 	"github.com/bluenviron/mediamtx/internal/protocols/webrtc"
 	"github.com/bluenviron/mediamtx/internal/stream"
@@ -93,14 +92,13 @@ func whipOffer(body []byte) *pwebrtc.SessionDescription {
 }
 
 type session struct {
-	parentCtx       context.Context
-	writeQueueSize  int
-	api             *pwebrtc.API
-	req             webRTCNewSessionReq
-	wg              *sync.WaitGroup
-	externalCmdPool *externalcmd.Pool
-	pathManager     defs.PathManager
-	parent          *Server
+	parentCtx      context.Context
+	writeQueueSize int
+	api            *pwebrtc.API
+	req            webRTCNewSessionReq
+	wg             *sync.WaitGroup
+	pathManager    defs.PathManager
+	parent         *Server
 
 	ctx       context.Context
 	ctxCancel func()

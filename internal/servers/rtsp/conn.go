@@ -14,7 +14,6 @@ import (
 
 	"github.com/bluenviron/mediamtx/internal/conf"
 	"github.com/bluenviron/mediamtx/internal/defs"
-	"github.com/bluenviron/mediamtx/internal/externalcmd"
 	"github.com/bluenviron/mediamtx/internal/logger"
 )
 
@@ -29,7 +28,6 @@ type conn struct {
 	runOnConnect        string
 	runOnConnectRestart bool
 	runOnDisconnect     string
-	externalCmdPool     *externalcmd.Pool
 	pathManager         defs.PathManager
 	rconn               *gortsplib.ServerConn
 	rserver             *gortsplib.Server

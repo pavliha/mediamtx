@@ -14,7 +14,6 @@ import (
 	"github.com/bluenviron/gortsplib/v4"
 
 	"github.com/bluenviron/mediamtx/internal/conf"
-	"github.com/bluenviron/mediamtx/internal/externalcmd"
 	"github.com/bluenviron/mediamtx/internal/logger"
 	"github.com/bluenviron/mediamtx/internal/servers/rtsp"
 	"github.com/bluenviron/mediamtx/internal/servers/webrtc"
@@ -37,16 +36,15 @@ var cli struct {
 
 // Core is an instance of MediaMTX.
 type Core struct {
-	ctx             context.Context
-	ctxCancel       func()
-	confPath        string
-	conf            *conf.Conf
-	logger          *logger.Logger
-	externalCmdPool *externalcmd.Pool
-	pathManager     *pathManager
-	rtspServer      *rtsp.Server
-	rtspsServer     *rtsp.Server
-	webRTCServer    *webrtc.Server
+	ctx          context.Context
+	ctxCancel    func()
+	confPath     string
+	conf         *conf.Conf
+	logger       *logger.Logger
+	pathManager  *pathManager
+	rtspServer   *rtsp.Server
+	rtspsServer  *rtsp.Server
+	webRTCServer *webrtc.Server
 
 	// in
 	chAPIConfigSet chan *conf.Conf
@@ -192,7 +190,6 @@ func (p *Core) createResources(initial bool) error {
 				strings.Join(list, ", "))
 		}
 
-		p.externalCmdPool = externalcmd.NewPool()
 	}
 	if p.pathManager == nil {
 		p.pathManager = &pathManager{
@@ -203,7 +200,6 @@ func (p *Core) createResources(initial bool) error {
 			writeQueueSize:    p.conf.WriteQueueSize,
 			udpMaxPayloadSize: p.conf.UDPMaxPayloadSize,
 			pathConfs:         p.conf.Paths,
-			externalCmdPool:   p.externalCmdPool,
 			parent:            p,
 		}
 		p.pathManager.initialize()
@@ -235,7 +231,6 @@ func (p *Core) createResources(initial bool) error {
 			RunOnConnect:        p.conf.RunOnConnect,
 			RunOnConnectRestart: p.conf.RunOnConnectRestart,
 			RunOnDisconnect:     p.conf.RunOnDisconnect,
-			ExternalCmdPool:     p.externalCmdPool,
 			PathManager:         p.pathManager,
 			Parent:              p,
 		}
@@ -264,7 +259,6 @@ func (p *Core) createResources(initial bool) error {
 			IPsFromInterfacesList: p.conf.WebRTCIPsFromInterfacesList,
 			AdditionalHosts:       p.conf.WebRTCAdditionalHosts,
 			ICEServers:            p.conf.WebRTCICEServers2,
-			ExternalCmdPool:       p.externalCmdPool,
 			PathManager:           p.pathManager,
 			Parent:                p,
 		}
@@ -373,9 +367,8 @@ func (p *Core) closeResources(newConf *conf.Conf, calledByAPI bool) {
 		p.pathManager = nil
 	}
 
-	if newConf == nil && p.externalCmdPool != nil {
+	if newConf == nil {
 		p.Log(logger.Info, "waiting for running hooks")
-		p.externalCmdPool.Close()
 	}
 
 	if closeLogger && p.logger != nil {

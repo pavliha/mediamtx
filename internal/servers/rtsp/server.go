@@ -15,7 +15,6 @@ import (
 
 	"github.com/bluenviron/mediamtx/internal/conf"
 	"github.com/bluenviron/mediamtx/internal/defs"
-	"github.com/bluenviron/mediamtx/internal/externalcmd"
 	"github.com/bluenviron/mediamtx/internal/logger"
 )
 
@@ -66,7 +65,6 @@ type Server struct {
 	RunOnConnect        string
 	RunOnConnectRestart bool
 	RunOnDisconnect     string
-	ExternalCmdPool     *externalcmd.Pool
 	PathManager         defs.PathManager
 	Parent              serverParent
 
@@ -176,7 +174,6 @@ func (s *Server) OnConnOpen(ctx *gortsplib.ServerHandlerOnConnOpenCtx) {
 		runOnConnect:        s.RunOnConnect,
 		runOnConnectRestart: s.RunOnConnectRestart,
 		runOnDisconnect:     s.RunOnDisconnect,
-		externalCmdPool:     s.ExternalCmdPool,
 		pathManager:         s.PathManager,
 		rconn:               ctx.Conn,
 		rserver:             s.srv,
@@ -214,14 +211,13 @@ func (s *Server) OnResponse(sc *gortsplib.ServerConn, res *base.Response) {
 // OnSessionOpen implements gortsplib.ServerHandlerOnSessionOpen.
 func (s *Server) OnSessionOpen(ctx *gortsplib.ServerHandlerOnSessionOpenCtx) {
 	se := &session{
-		isTLS:           s.IsTLS,
-		protocols:       s.Protocols,
-		rsession:        ctx.Session,
-		rconn:           ctx.Conn,
-		rserver:         s.srv,
-		externalCmdPool: s.ExternalCmdPool,
-		pathManager:     s.PathManager,
-		parent:          s,
+		isTLS:       s.IsTLS,
+		protocols:   s.Protocols,
+		rsession:    ctx.Session,
+		rconn:       ctx.Conn,
+		rserver:     s.srv,
+		pathManager: s.PathManager,
+		parent:      s,
 	}
 	se.initialize()
 	s.mutex.Lock()

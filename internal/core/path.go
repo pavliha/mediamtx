@@ -3,7 +3,6 @@ package core
 import (
 	"context"
 	"fmt"
-	"net"
 	"strconv"
 	"strings"
 	"sync"
@@ -14,7 +13,6 @@ import (
 
 	"github.com/bluenviron/mediamtx/internal/conf"
 	"github.com/bluenviron/mediamtx/internal/defs"
-	"github.com/bluenviron/mediamtx/internal/externalcmd"
 	"github.com/bluenviron/mediamtx/internal/logger"
 	"github.com/bluenviron/mediamtx/internal/stream"
 )
@@ -54,7 +52,6 @@ type path struct {
 	name              string
 	matches           []string
 	wg                *sync.WaitGroup
-	externalCmdPool   *externalcmd.Pool
 	parent            pathParent
 
 	ctx                            context.Context
@@ -503,23 +500,6 @@ func (pa *path) SafeConf() *conf.Path {
 	pa.confMutex.RLock()
 	defer pa.confMutex.RUnlock()
 	return pa.conf
-}
-
-func (pa *path) ExternalCmdEnv() externalcmd.Environment {
-	_, port, _ := net.SplitHostPort(pa.rtspAddress)
-	env := externalcmd.Environment{
-		"MTX_PATH":  pa.name,
-		"RTSP_PATH": pa.name, // deprecated
-		"RTSP_PORT": port,
-	}
-
-	if len(pa.matches) > 1 {
-		for i, ma := range pa.matches[1:] {
-			env["G"+strconv.FormatInt(int64(i+1), 10)] = ma
-		}
-	}
-
-	return env
 }
 
 func (pa *path) shouldClose() bool {

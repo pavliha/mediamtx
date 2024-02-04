@@ -9,7 +9,6 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/bluenviron/mediamtx/internal/conf"
-	"github.com/bluenviron/mediamtx/internal/externalcmd"
 	"github.com/bluenviron/mediamtx/internal/stream"
 )
 
@@ -27,7 +26,6 @@ func (e PathNoOnePublishingError) Error() string {
 type Path interface {
 	Name() string
 	SafeConf() *conf.Path
-	ExternalCmdEnv() externalcmd.Environment
 	StartPublisher(req PathStartPublisherReq) PathStartPublisherRes
 	StopPublisher(req PathStopPublisherReq)
 	RemovePublisher(req PathRemovePublisherReq)

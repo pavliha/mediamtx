@@ -21,7 +21,6 @@ import (
 
 	"github.com/bluenviron/mediamtx/internal/conf"
 	"github.com/bluenviron/mediamtx/internal/defs"
-	"github.com/bluenviron/mediamtx/internal/externalcmd"
 	"github.com/bluenviron/mediamtx/internal/logger"
 	"github.com/bluenviron/mediamtx/internal/protocols/webrtc"
 	"github.com/bluenviron/mediamtx/internal/restrictnetwork"
@@ -164,7 +163,6 @@ type Server struct {
 	IPsFromInterfacesList []string
 	AdditionalHosts       []string
 	ICEServers            []conf.WebRTCICEServer
-	ExternalCmdPool       *externalcmd.Pool
 	PathManager           defs.PathManager
 	Parent                serverParent
 
@@ -291,14 +289,13 @@ outer:
 		select {
 		case req := <-s.chNewSession:
 			sx := &session{
-				parentCtx:       s.ctx,
-				writeQueueSize:  s.WriteQueueSize,
-				api:             s.api,
-				req:             req,
-				wg:              &wg,
-				externalCmdPool: s.ExternalCmdPool,
-				pathManager:     s.PathManager,
-				parent:          s,
+				parentCtx:      s.ctx,
+				writeQueueSize: s.WriteQueueSize,
+				api:            s.api,
+				req:            req,
+				wg:             &wg,
+				pathManager:    s.PathManager,
+				parent:         s,
 			}
 			sx.initialize()
 			s.sessions[sx] = struct{}{}

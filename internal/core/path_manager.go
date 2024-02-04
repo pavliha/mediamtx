@@ -7,7 +7,6 @@ import (
 
 	"github.com/bluenviron/mediamtx/internal/conf"
 	"github.com/bluenviron/mediamtx/internal/defs"
-	"github.com/bluenviron/mediamtx/internal/externalcmd"
 	"github.com/bluenviron/mediamtx/internal/logger"
 )
 
@@ -28,7 +27,6 @@ type pathManager struct {
 	writeQueueSize    int
 	udpMaxPayloadSize int
 	pathConfs         map[string]*conf.Path
-	externalCmdPool   *externalcmd.Pool
 	parent            pathManagerParent
 
 	ctx         context.Context
@@ -217,7 +215,6 @@ func (pm *pathManager) createPath(
 		name:              name,
 		matches:           matches,
 		wg:                &pm.wg,
-		externalCmdPool:   pm.externalCmdPool,
 		parent:            pm,
 	}
 	pa.initialize()
