@@ -41,26 +41,6 @@ const (
 	pathOnDemandStateClosing
 )
 
-type pathAPIPathsListRes struct {
-	data  *defs.APIPathList
-	paths map[string]*path
-}
-
-type pathAPIPathsListReq struct {
-	res chan pathAPIPathsListRes
-}
-
-type pathAPIPathsGetRes struct {
-	path *path
-	data *defs.APIPath
-	err  error
-}
-
-type pathAPIPathsGetReq struct {
-	name string
-	res  chan pathAPIPathsGetRes
-}
-
 type path struct {
 	parentCtx         context.Context
 	logLevel          conf.LogLevel
@@ -106,7 +86,6 @@ type path struct {
 	chStopPublisher           chan defs.PathStopPublisherReq
 	chAddReader               chan defs.PathAddReaderReq
 	chRemoveReader            chan defs.PathRemoveReaderReq
-	chAPIPathsGet             chan pathAPIPathsGetReq
 
 	// out
 	done chan struct{}
@@ -131,7 +110,6 @@ func (pa *path) initialize() {
 	pa.chStopPublisher = make(chan defs.PathStopPublisherReq)
 	pa.chAddReader = make(chan defs.PathAddReaderReq)
 	pa.chRemoveReader = make(chan defs.PathRemoveReaderReq)
-	pa.chAPIPathsGet = make(chan pathAPIPathsGetReq)
 	pa.done = make(chan struct{})
 
 	pa.Log(logger.Debug, "created")
@@ -821,18 +799,5 @@ func (pa *path) RemoveReader(req defs.PathRemoveReaderReq) {
 	case pa.chRemoveReader <- req:
 		<-req.Res
 	case <-pa.ctx.Done():
-	}
-}
-
-// APIPathsGet is called by api.
-func (pa *path) APIPathsGet(req pathAPIPathsGetReq) (*defs.APIPath, error) {
-	req.res = make(chan pathAPIPathsGetRes)
-	select {
-	case pa.chAPIPathsGet <- req:
-		res := <-req.res
-		return res.data, res.err
-
-	case <-pa.ctx.Done():
-		return nil, fmt.Errorf("terminated")
 	}
 }

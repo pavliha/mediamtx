@@ -3,7 +3,6 @@ package core
 import (
 	"context"
 	"fmt"
-	"sort"
 	"sync"
 
 	"github.com/bluenviron/mediamtx/internal/conf"
@@ -48,8 +47,6 @@ type pathManager struct {
 	chDescribe     chan defs.PathDescribeReq
 	chAddReader    chan defs.PathAddReaderReq
 	chAddPublisher chan defs.PathAddPublisherReq
-	chAPIPathsList chan pathAPIPathsListReq
-	chAPIPathsGet  chan pathAPIPathsGetReq
 }
 
 func (pm *pathManager) initialize() {
@@ -67,8 +64,6 @@ func (pm *pathManager) initialize() {
 	pm.chDescribe = make(chan defs.PathDescribeReq)
 	pm.chAddReader = make(chan defs.PathAddReaderReq)
 	pm.chAddPublisher = make(chan defs.PathAddPublisherReq)
-	pm.chAPIPathsList = make(chan pathAPIPathsListReq)
-	pm.chAPIPathsGet = make(chan pathAPIPathsGetReq)
 
 	for pathConfName, pathConf := range pm.pathConfs {
 		if pathConf.Regexp == nil {
@@ -120,12 +115,6 @@ outer:
 
 		case req := <-pm.chAddPublisher:
 			pm.doAddPublisher(req)
-
-		case req := <-pm.chAPIPathsList:
-			pm.doAPIPathsList(req)
-
-		case req := <-pm.chAPIPathsGet:
-			pm.doAPIPathsGet(req)
 
 		case <-pm.ctx.Done():
 			break outer
@@ -207,26 +196,6 @@ func (pm *pathManager) doAddPublisher(req defs.PathAddPublisherReq) {
 	}
 
 	req.Res <- defs.PathAddPublisherRes{Path: pm.paths[req.AccessRequest.Name]}
-}
-
-func (pm *pathManager) doAPIPathsList(req pathAPIPathsListReq) {
-	paths := make(map[string]*path)
-
-	for name, pa := range pm.paths {
-		paths[name] = pa
-	}
-
-	req.res <- pathAPIPathsListRes{paths: paths}
-}
-
-func (pm *pathManager) doAPIPathsGet(req pathAPIPathsGetReq) {
-	path, ok := pm.paths[req.name]
-	if !ok {
-		req.res <- pathAPIPathsGetRes{err: conf.ErrPathNotFound}
-		return
-	}
-
-	req.res <- pathAPIPathsGetRes{path: path}
 }
 
 func (pm *pathManager) createPath(
@@ -370,37 +339,5 @@ func (pm *pathManager) setHLSServer(s pathManagerHLSServer) {
 	select {
 	case pm.chSetHLSServer <- s:
 	case <-pm.ctx.Done():
-	}
-}
-
-// APIPathsList is called by api.
-func (pm *pathManager) APIPathsList() (*defs.APIPathList, error) {
-	req := pathAPIPathsListReq{
-		res: make(chan pathAPIPathsListRes),
-	}
-
-	select {
-	case pm.chAPIPathsList <- req:
-		res := <-req.res
-
-		res.data = &defs.APIPathList{
-			Items: []*defs.APIPath{},
-		}
-
-		for _, pa := range res.paths {
-			item, err := pa.APIPathsGet(pathAPIPathsGetReq{})
-			if err == nil {
-				res.data.Items = append(res.data.Items, item)
-			}
-		}
-
-		sort.Slice(res.data.Items, func(i, j int) bool {
-			return res.data.Items[i].Name < res.data.Items[j].Name
-		})
-
-		return res.data, nil
-
-	case <-pm.ctx.Done():
-		return nil, fmt.Errorf("terminated")
 	}
 }

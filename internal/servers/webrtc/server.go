@@ -97,25 +97,6 @@ func randomTurnUser() (string, error) {
 	return string(b), nil
 }
 
-type serverAPISessionsListRes struct {
-	data *defs.APIWebRTCSessionList
-	err  error
-}
-
-type serverAPISessionsListReq struct {
-	res chan serverAPISessionsListRes
-}
-
-type serverAPISessionsGetRes struct {
-	data *defs.APIWebRTCSession
-	err  error
-}
-
-type serverAPISessionsGetReq struct {
-	uuid uuid.UUID
-	res  chan serverAPISessionsGetRes
-}
-
 type serverAPISessionsKickRes struct {
 	err error
 }
@@ -201,9 +182,6 @@ type Server struct {
 	chCloseSession         chan *session
 	chAddSessionCandidates chan webRTCAddSessionCandidatesReq
 	chDeleteSession        chan webRTCDeleteSessionReq
-	chAPISessionsList      chan serverAPISessionsListReq
-	chAPISessionsGet       chan serverAPISessionsGetReq
-	chAPIConnsKick         chan serverAPISessionsKickReq
 
 	// out
 	done chan struct{}
@@ -221,9 +199,6 @@ func (s *Server) Initialize() error {
 	s.chCloseSession = make(chan *session)
 	s.chAddSessionCandidates = make(chan webRTCAddSessionCandidatesReq)
 	s.chDeleteSession = make(chan webRTCDeleteSessionReq)
-	s.chAPISessionsList = make(chan serverAPISessionsListReq)
-	s.chAPISessionsGet = make(chan serverAPISessionsGetReq)
-	s.chAPIConnsKick = make(chan serverAPISessionsKickReq)
 	s.done = make(chan struct{})
 
 	s.httpServer = &httpServer{
