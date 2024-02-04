@@ -8,8 +8,8 @@ import (
 
 	"github.com/bluenviron/mediamtx/internal/conf"
 	"github.com/bluenviron/mediamtx/internal/defs"
-	"github.com/bluenviron/mediamtx/internal/logger"
 	rtspsource "github.com/bluenviron/mediamtx/internal/staticsources/rtsp"
+	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -17,7 +17,6 @@ const (
 )
 
 type staticSourceHandlerParent interface {
-	logger.Writer
 	staticSourceHandlerSetReady(context.Context, defs.PathSourceStaticSetReadyReq)
 	staticSourceHandlerSetNotReady(context.Context, defs.PathSourceStaticSetNotReadyReq)
 }
@@ -66,14 +65,7 @@ func (s *staticSourceHandler) start(onDemand bool) {
 	}
 
 	s.running = true
-	s.instance.Log(logger.Info, "started%s",
-		func() string {
-			if onDemand {
-				return " on demand"
-			}
-			return ""
-		}())
-
+	logrus.Info("[source] started")
 	s.ctx, s.ctxCancel = context.WithCancel(context.Background())
 	s.done = make(chan struct{})
 
@@ -86,17 +78,12 @@ func (s *staticSourceHandler) stop(reason string) {
 	}
 
 	s.running = false
-	s.instance.Log(logger.Info, "stopped: %s", reason)
+	logrus.Info("[source] stopped ", reason)
 
 	s.ctxCancel()
 
 	// we must wait since s.ctx is not thread safe
 	<-s.done
-}
-
-// Log implements logger.Writer.
-func (s *staticSourceHandler) Log(level logger.Level, format string, args ...interface{}) {
-	s.parent.Log(level, format, args...)
 }
 
 func (s *staticSourceHandler) run() {
@@ -125,7 +112,7 @@ func (s *staticSourceHandler) run() {
 		select {
 		case err := <-runErr:
 			runCtxCancel()
-			s.instance.Log(logger.Error, err.Error())
+			logrus.Error("[source] run ", err)
 			recreating = true
 			recreateTimer = time.NewTimer(staticSourceHandlerRetryPause)
 
@@ -157,7 +144,7 @@ func (s *staticSourceHandler) SetReady(req defs.PathSourceStaticSetReadyReq) def
 		res := <-req.Res
 
 		if res.Err == nil {
-			s.instance.Log(logger.Info, "ready: %s", defs.MediasInfo(req.Desc.Medias))
+			logrus.Info("[source] ready ", defs.MediasInfo(req.Desc.Medias))
 		}
 
 		return res

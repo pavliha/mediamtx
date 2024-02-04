@@ -3,8 +3,6 @@ package stream
 import (
 	"github.com/bluenviron/gortsplib/v4/pkg/description"
 	"github.com/bluenviron/gortsplib/v4/pkg/format"
-
-	"github.com/bluenviron/mediamtx/internal/logger"
 )
 
 type streamMedia struct {
@@ -14,7 +12,6 @@ type streamMedia struct {
 func newStreamMedia(
 	medi *description.Media,
 	generateRTPPackets bool,
-	decodeErrLogger logger.Writer,
 ) (*streamMedia, error) {
 	sm := &streamMedia{
 		formats: make(map[format.Format]*streamFormat),
@@ -22,7 +19,7 @@ func newStreamMedia(
 
 	for _, forma := range medi.Formats {
 		var err error
-		sm.formats[forma], err = newStreamFormat(forma, generateRTPPackets, decodeErrLogger)
+		sm.formats[forma], err = newStreamFormat(forma, generateRTPPackets)
 		if err != nil {
 			return nil, err
 		}

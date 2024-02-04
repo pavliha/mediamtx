@@ -31,7 +31,6 @@ type streamFormat struct {
 func newStreamFormat(
 	forma format.Format,
 	generateRTPPackets bool,
-	decodeErrLogger logger.Writer,
 ) (*streamFormat, error) {
 	proc, err := formatprocessor.New(forma, generateRTPPackets)
 	if err != nil {
@@ -39,9 +38,8 @@ func newStreamFormat(
 	}
 
 	sf := &streamFormat{
-		decodeErrLogger: decodeErrLogger,
-		proc:            proc,
-		readers:         make(map[*asyncwriter.Writer]readerFunc),
+		proc:    proc,
+		readers: make(map[*asyncwriter.Writer]readerFunc),
 	}
 
 	return sf, nil

@@ -12,7 +12,6 @@ import (
 	"github.com/pion/rtp"
 
 	"github.com/bluenviron/mediamtx/internal/asyncwriter"
-	"github.com/bluenviron/mediamtx/internal/logger"
 	"github.com/bluenviron/mediamtx/internal/unit"
 )
 
@@ -35,7 +34,6 @@ type Stream struct {
 func New(
 	desc *description.Session,
 	generateRTPPackets bool,
-	decodeErrLogger logger.Writer,
 ) (*Stream, error) {
 	s := &Stream{
 		desc:          desc,
@@ -47,7 +45,7 @@ func New(
 
 	for _, media := range desc.Medias {
 		var err error
-		s.smedias[media], err = newStreamMedia(media, generateRTPPackets, decodeErrLogger)
+		s.smedias[media], err = newStreamMedia(media, generateRTPPackets)
 		if err != nil {
 			return nil, err
 		}

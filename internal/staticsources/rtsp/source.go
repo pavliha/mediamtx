@@ -7,9 +7,9 @@ import (
 	"github.com/bluenviron/gortsplib/v4"
 	"github.com/bluenviron/gortsplib/v4/pkg/base"
 	"github.com/pion/rtp"
+	"github.com/sirupsen/logrus"
 
 	"github.com/bluenviron/mediamtx/internal/defs"
-	"github.com/bluenviron/mediamtx/internal/logger"
 )
 
 // Source is a RTSP static source.
@@ -17,35 +17,28 @@ type Source struct {
 	Parent defs.StaticSourceParent
 }
 
-// Log implements logger.Writer.
-func (s *Source) Log(level logger.Level, format string, args ...interface{}) {
-	s.Parent.Log(level, "[RTSP source] "+format, args...)
-}
-
 // Run implements StaticSource.
 func (s *Source) Run(params defs.StaticSourceRunParams) error {
-	s.Log(logger.Debug, "connecting")
-
-	decodeErrLogger := logger.NewLimitedLogger(s)
+	logrus.Debug("[rtsp] connecting")
 
 	c := &gortsplib.Client{
 		ReadTimeout:    5 * time.Second,
 		WriteTimeout:   5 * time.Second,
 		WriteQueueSize: 512,
 		OnRequest: func(req *base.Request) {
-			s.Log(logger.Debug, "[c->s] %v", req)
+			logrus.Debug("[rtsp] [c->s] ", req)
 		},
 		OnResponse: func(res *base.Response) {
-			s.Log(logger.Debug, "[s->c] %v", res)
+			logrus.Debug("[rtsp] [s->c] ", res)
 		},
 		OnTransportSwitch: func(err error) {
-			s.Log(logger.Warn, err.Error())
+			logrus.Warn("[rtsp] transport ", err.Error())
 		},
 		OnPacketLost: func(err error) {
-			decodeErrLogger.Log(logger.Warn, err.Error())
+			logrus.Warn("[rtsp] packet lost ", err.Error())
 		},
 		OnDecodeError: func(err error) {
-			decodeErrLogger.Log(logger.Warn, err.Error())
+			logrus.Warn("[rtsp] decode error ", err.Error())
 		},
 	}
 

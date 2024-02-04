@@ -6,8 +6,6 @@ import (
 
 	"github.com/bluenviron/gortsplib/v4/pkg/description"
 	"github.com/bluenviron/gortsplib/v4/pkg/format"
-
-	"github.com/bluenviron/mediamtx/internal/logger"
 )
 
 // Source is an entity that can provide a stream.
@@ -15,9 +13,7 @@ import (
 // - publisher
 // - staticSourceHandler
 // - redirectSource
-type Source interface {
-	logger.Writer
-}
+type Source interface{}
 
 // FormatsToCodecs returns the name of codecs of given formats.
 func FormatsToCodecs(formats []format.Format) []string {

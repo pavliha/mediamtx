@@ -4,18 +4,15 @@ import (
 	"context"
 
 	"github.com/bluenviron/mediamtx/internal/conf"
-	"github.com/bluenviron/mediamtx/internal/logger"
 )
 
 // StaticSource is a static source.
 type StaticSource interface {
-	logger.Writer
 	Run(StaticSourceRunParams) error
 }
 
 // StaticSourceParent is the parent of a static source.
 type StaticSourceParent interface {
-	logger.Writer
 	SetReady(req PathSourceStaticSetReadyReq) PathSourceStaticSetReadyRes
 	SetNotReady(req PathSourceStaticSetNotReadyReq)
 }

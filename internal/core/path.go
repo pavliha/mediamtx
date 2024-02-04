@@ -273,12 +273,10 @@ func (pa *path) doOnDemandStaticSourceReadyTimer() {
 	}
 	pa.readerAddRequestsOnHold = nil
 
-	pa.onDemandStaticSourceStop("timed out")
 }
 
 func (pa *path) doOnDemandStaticSourceCloseTimer() {
 	pa.setNotReady()
-	pa.onDemandStaticSourceStop("not needed by anyone")
 }
 
 func (pa *path) doOnDemandPublisherReadyTimer() {
@@ -317,10 +315,6 @@ func (pa *path) doSourceStaticSetNotReady(req defs.PathSourceStaticSetNotReadyRe
 	// send response before calling onDemandStaticSourceStop()
 	// in order to avoid a deadlock due to staticSourceHandler.stop()
 	close(req.Res)
-
-	if pa.onDemandStaticSourceState != pathOnDemandStateInitial {
-		pa.onDemandStaticSourceStop("an error occurred")
-	}
 }
 
 func (pa *path) doDescribe(req defs.PathDescribeReq) {
@@ -395,10 +389,6 @@ func (pa *path) doStartPublisher(req defs.PathStartPublisherReq) {
 		return
 	}
 
-	req.Author.Log(logger.Info, "is publishing to path '%s', %s",
-		pa.name,
-		defs.MediasInfo(req.Desc.Medias))
-
 	if pa.onDemandPublisherState != pathOnDemandStateInitial {
 		pa.onDemandPublisherReadyTimer.Stop()
 		pa.onDemandPublisherReadyTimer = newEmptyTimer()
@@ -448,31 +438,6 @@ func (pa *path) shouldClose() bool {
 		len(pa.readerAddRequestsOnHold) == 0
 }
 
-func (pa *path) onDemandStaticSourceStart() {
-	pa.source.(*staticSourceHandler).start(true)
-
-	pa.onDemandStaticSourceReadyTimer.Stop()
-
-	pa.onDemandStaticSourceState = pathOnDemandStateWaitingReady
-}
-
-func (pa *path) onDemandStaticSourceScheduleClose() {
-	pa.onDemandStaticSourceCloseTimer.Stop()
-
-	pa.onDemandStaticSourceState = pathOnDemandStateClosing
-}
-
-func (pa *path) onDemandStaticSourceStop(reason string) {
-	if pa.onDemandStaticSourceState == pathOnDemandStateClosing {
-		pa.onDemandStaticSourceCloseTimer.Stop()
-		pa.onDemandStaticSourceCloseTimer = newEmptyTimer()
-	}
-
-	pa.onDemandStaticSourceState = pathOnDemandStateInitial
-
-	pa.source.(*staticSourceHandler).stop(reason)
-}
-
 func (pa *path) onDemandPublisherStart(query string) {
 	pa.onDemandPublisherReadyTimer.Stop()
 
@@ -496,11 +461,7 @@ func (pa *path) onDemandPublisherStop(reason string) {
 
 func (pa *path) setReady(desc *description.Session, allocateEncoder bool) error {
 	var err error
-	pa.stream, err = stream.New(
-		desc,
-		allocateEncoder,
-		logger.NewLimitedLogger(pa.source),
-	)
+	pa.stream, err = stream.New(desc, allocateEncoder)
 	if err != nil {
 		return err
 	}
