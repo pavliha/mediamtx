@@ -10,10 +10,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/bluenviron/gortsplib/v4/pkg/description"
 	"github.com/bluenviron/gortsplib/v4/pkg/format"
 	"github.com/bluenviron/gortsplib/v4/pkg/format/rtph264"
-	"github.com/bluenviron/gortsplib/v4/pkg/rtptime"
 	"github.com/google/uuid"
 	"github.com/pion/sdp/v3"
 	pwebrtc "github.com/pion/webrtc/v3"
@@ -224,7 +222,6 @@ func (s *session) runPublish() (int, error) {
 		return http.StatusBadRequest, err
 	}
 
-	trackCount, err := webrtc.TrackCount(sdp.MediaDescriptions)
 	if err != nil {
 		// RFC draft-ietf-wish-whip
 		// if the number of audio and or video
@@ -252,44 +249,13 @@ func (s *session) runPublish() (int, error) {
 	s.pc = pc
 	s.mutex.Unlock()
 
-	tracks, err := pc.GatherIncomingTracks(s.ctx, trackCount)
-	if err != nil {
-		return 0, err
-	}
-
-	medias := webrtc.TracksToMedias(tracks)
-
 	rres := res.Path.StartPublisher(defs.PathStartPublisherReq{
 		Author:             s,
-		Desc:               &description.Session{Medias: medias},
+		Desc:               nil,
 		GenerateRTPPackets: false,
 	})
 	if rres.Err != nil {
 		return 0, rres.Err
-	}
-
-	timeDecoder := rtptime.NewGlobalDecoder()
-
-	for i, media := range medias {
-		ci := i
-		cmedia := media
-		trackWrapper := &webrtc.TrackWrapper{ClockRat: cmedia.Formats[0].ClockRate()}
-
-		go func() {
-			for {
-				pkt, err := tracks[ci].ReadRTP()
-				if err != nil {
-					return
-				}
-
-				pts, ok := timeDecoder.Decode(trackWrapper, pkt)
-				if !ok {
-					continue
-				}
-
-				rres.Stream.WriteRTPPacket(cmedia, cmedia.Formats[0], pkt, time.Now(), pts)
-			}
-		}()
 	}
 
 	select {

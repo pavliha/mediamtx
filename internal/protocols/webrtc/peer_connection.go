@@ -233,44 +233,6 @@ outer:
 	return nil
 }
 
-// GatherIncomingTracks gathers incoming tracks.
-func (co *PeerConnection) GatherIncomingTracks(
-	ctx context.Context,
-	count int,
-) ([]*IncomingTrack, error) {
-	var tracks []*IncomingTrack
-
-	t := time.NewTimer(webrtcTrackGatherTimeout)
-	defer t.Stop()
-
-	for {
-		select {
-		case <-t.C:
-			if count == 0 {
-				return tracks, nil
-			}
-			return nil, fmt.Errorf("deadline exceeded while waiting tracks")
-
-		case pair := <-co.incomingTrack:
-			track, err := newIncomingTrack(pair.track, pair.receiver, co.wr.WriteRTCP, co.Log)
-			if err != nil {
-				return nil, err
-			}
-			tracks = append(tracks, track)
-
-			if len(tracks) == count || len(tracks) >= 2 {
-				return tracks, nil
-			}
-
-		case <-co.Disconnected():
-			return nil, fmt.Errorf("peer connection closed")
-
-		case <-ctx.Done():
-			return nil, fmt.Errorf("terminated")
-		}
-	}
-}
-
 // SetupOutgoingTracks setups outgoing tracks.
 func (co *PeerConnection) SetupOutgoingTracks(
 	videoTrack format.Format,
