@@ -32,7 +32,7 @@ func newStreamFormat(
 	forma format.Format,
 	generateRTPPackets bool,
 ) (*streamFormat, error) {
-	proc, err := formatprocessor.New(forma, generateRTPPackets)
+	proc, err := formatprocessor.New(forma)
 	if err != nil {
 		return nil, err
 	}

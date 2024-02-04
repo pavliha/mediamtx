@@ -81,17 +81,14 @@ type formatProcessorH264 struct {
 
 func newH264(
 	forma *format.H264,
-	generateRTPPackets bool,
 ) (*formatProcessorH264, error) {
 	t := &formatProcessorH264{
 		format: forma,
 	}
 
-	if generateRTPPackets {
-		err := t.createEncoder(nil, nil)
-		if err != nil {
-			return nil, err
-		}
+	err := t.createEncoder(nil, nil)
+	if err != nil {
+		return nil, err
 	}
 
 	return t, nil
