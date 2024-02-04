@@ -14,7 +14,6 @@ import (
 	"github.com/bluenviron/gortsplib/v4"
 
 	"github.com/bluenviron/mediamtx/internal/conf"
-	"github.com/bluenviron/mediamtx/internal/confwatcher"
 	"github.com/bluenviron/mediamtx/internal/externalcmd"
 	"github.com/bluenviron/mediamtx/internal/logger"
 	"github.com/bluenviron/mediamtx/internal/servers/rtsp"
@@ -48,7 +47,6 @@ type Core struct {
 	rtspServer      *rtsp.Server
 	rtspsServer     *rtsp.Server
 	webRTCServer    *webrtc.Server
-	confWatcher     *confwatcher.ConfWatcher
 
 	// in
 	chAPIConfigSet chan *conf.Conf
@@ -133,34 +131,12 @@ func (p *Core) Log(level logger.Level, format string, args ...interface{}) {
 func (p *Core) run() {
 	defer close(p.done)
 
-	confChanged := func() chan struct{} {
-		if p.confWatcher != nil {
-			return p.confWatcher.Watch()
-		}
-		return make(chan struct{})
-	}()
-
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt)
 
 outer:
 	for {
 		select {
-		case <-confChanged:
-			p.Log(logger.Info, "reloading configuration (file changed)")
-
-			newConf, _, err := conf.Load(p.confPath, nil)
-			if err != nil {
-				p.Log(logger.Error, "%s", err)
-				break outer
-			}
-
-			err = p.reloadConf(newConf, false)
-			if err != nil {
-				p.Log(logger.Error, "%s", err)
-				break outer
-			}
-
 		case newConf := <-p.chAPIConfigSet:
 			p.Log(logger.Info, "reloading configuration (API request)")
 
@@ -300,13 +276,6 @@ func (p *Core) createResources(initial bool) error {
 
 	}
 
-	if initial && p.confPath != "" {
-		p.confWatcher, err = confwatcher.New(p.confPath)
-		if err != nil {
-			return err
-		}
-	}
-
 	return nil
 }
 
@@ -379,11 +348,6 @@ func (p *Core) closeResources(newConf *conf.Conf, calledByAPI bool) {
 		!reflect.DeepEqual(newConf.WebRTCICEServers2, p.conf.WebRTCICEServers2) ||
 		closePathManager ||
 		closeLogger
-
-	if newConf == nil && p.confWatcher != nil {
-		p.confWatcher.Close()
-		p.confWatcher = nil
-	}
 
 	if closeWebRTCServer && p.webRTCServer != nil {
 
