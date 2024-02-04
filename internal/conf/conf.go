@@ -2,7 +2,6 @@
 package conf
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -335,16 +334,6 @@ func (conf *Conf) Validate() error {
 	}
 
 	return nil
-}
-
-// UnmarshalJSON implements json.Unmarshaler.
-func (conf *Conf) UnmarshalJSON(b []byte) error {
-	conf.setDefaults()
-
-	type alias Conf
-	d := json.NewDecoder(bytes.NewReader(b))
-	d.DisallowUnknownFields()
-	return d.Decode((*alias)(conf))
 }
 
 // Global returns the global part of Conf.

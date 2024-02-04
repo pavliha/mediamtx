@@ -259,62 +259,6 @@ pathDefaults:
   # The command will be closed when there are no
   # readers connected and this amount of time has passed.
   runOnDemandCloseAfter: 10s
-  # Command to run when there are no readers anymore.
-  # Environment variables are the same of runOnDemand.
-  runOnUnDemand:
-
-  # Command to run when the stream is ready to be read, whenever it is
-  # published by a client or pulled from a server / camera.
-  # This is terminated with SIGINT when the stream is not ready anymore.
-  # The following environment variables are available:
-  # * MTX_PATH: path name
-  # * MTX_QUERY: query parameters (passed by publisher)
-  # * RTSP_PORT: RTSP server port
-  # * G1, G2, ...: regular expression groups, if path name is
-  #   a regular expression.
-  # * MTX_SOURCE_TYPE: source type
-  # * MTX_SOURCE_ID: source ID
-  runOnReady:
-  # Restart the command if it exits.
-  runOnReadyRestart: no
-  # Command to run when the stream is not available anymore.
-  # Environment variables are the same of runOnReady.
-  runOnNotReady:
-
-  # Command to run when a client starts reading.
-  # This is terminated with SIGINT when a client stops reading.
-  # The following environment variables are available:
-  # * MTX_PATH: path name
-  # * MTX_QUERY: query parameters (passed by reader)
-  # * RTSP_PORT: RTSP server port
-  # * G1, G2, ...: regular expression groups, if path name is
-  #   a regular expression.
-  # * MTX_READER_TYPE: reader type
-  # * MTX_READER_ID: reader ID
-  runOnRead:
-  # Restart the command if it exits.
-  runOnReadRestart: no
-  # Command to run when a client stops reading.
-  # Environment variables are the same of runOnRead.
-  runOnUnread:
-
-  # Command to run when a recording segment is created.
-  # The following environment variables are available:
-  # * MTX_PATH: path name
-  # * RTSP_PORT: RTSP server port
-  # * G1, G2, ...: regular expression groups, if path name is
-  #   a regular expression.
-  # * MTX_SEGMENT_PATH: segment file path
-  runOnRecordSegmentCreate:
-
-  # Command to run when a recording segment is complete.
-  # The following environment variables are available:
-  # * MTX_PATH: path name
-  # * RTSP_PORT: RTSP server port
-  # * G1, G2, ...: regular expression groups, if path name is
-  #   a regular expression.
-  # * MTX_SEGMENT_PATH: segment file path
-  runOnRecordSegmentComplete:
 
 ###############################################
 # Path settings

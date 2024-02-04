@@ -147,14 +147,6 @@ func (pconf *Path) setDefaults() {
 	pconf.SourceOnDemandStartTimeout = 10 * StringDuration(time.Second)
 	pconf.SourceOnDemandCloseAfter = 10 * StringDuration(time.Second)
 
-	// Record and playback
-	pconf.Playback = true
-	pconf.RecordPath = "./recordings/%path/%Y-%m-%d_%H-%M-%S-%f"
-	pconf.RecordFormat = RecordFormatFMP4
-	pconf.RecordPartDuration = 100 * StringDuration(time.Millisecond)
-	pconf.RecordSegmentDuration = 3600 * StringDuration(time.Second)
-	pconf.RecordDeleteAfter = 24 * 3600 * StringDuration(time.Second)
-
 	// Publisher source
 	pconf.OverridePublisher = true
 

@@ -363,9 +363,3 @@ func (p *Core) closeResources(newConf *conf.Conf, calledByAPI bool) {
 		p.logger = nil
 	}
 }
-
-func (p *Core) loadConf(newConf *conf.Conf, calledByAPI bool) error {
-	p.closeResources(newConf, calledByAPI)
-	p.conf = newConf
-	return p.createResources(false)
-}
