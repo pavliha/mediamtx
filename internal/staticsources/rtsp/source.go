@@ -173,8 +173,6 @@ func (s *Source) Run(params defs.StaticSourceRunParams) error {
 		case err := <-readErr:
 			return err
 
-		case <-params.ReloadConf:
-
 		case <-params.Context.Done():
 			c.Close()
 			<-readErr

@@ -22,7 +22,6 @@ type StaticSourceParent interface {
 
 // StaticSourceRunParams is the set of params passed to Run().
 type StaticSourceRunParams struct {
-	Context    context.Context
-	Conf       *conf.Path
-	ReloadConf chan *conf.Path
+	Context context.Context
+	Conf    *conf.Path
 }

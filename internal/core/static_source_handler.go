@@ -38,7 +38,6 @@ type staticSourceHandler struct {
 	running   bool
 
 	// in
-	chReloadConf          chan *conf.Path
 	chInstanceSetReady    chan defs.PathSourceStaticSetReadyReq
 	chInstanceSetNotReady chan defs.PathSourceStaticSetNotReadyReq
 
@@ -47,7 +46,6 @@ type staticSourceHandler struct {
 }
 
 func (s *staticSourceHandler) initialize() {
-	s.chReloadConf = make(chan *conf.Path)
 	s.chInstanceSetReady = make(chan defs.PathSourceStaticSetReadyReq)
 	s.chInstanceSetNotReady = make(chan defs.PathSourceStaticSetNotReadyReq)
 
@@ -113,15 +111,13 @@ func (s *staticSourceHandler) run() {
 	var runCtx context.Context
 	var runCtxCancel func()
 	runErr := make(chan error)
-	runReloadConf := make(chan *conf.Path)
 
 	recreate := func() {
 		runCtx, runCtxCancel = context.WithCancel(context.Background())
 		go func() {
 			runErr <- s.instance.Run(defs.StaticSourceRunParams{
-				Context:    runCtx,
-				Conf:       s.conf,
-				ReloadConf: runReloadConf,
+				Context: runCtx,
+				Conf:    s.conf,
 			})
 		}()
 	}
@@ -144,19 +140,6 @@ func (s *staticSourceHandler) run() {
 
 		case req := <-s.chInstanceSetNotReady:
 			s.parent.staticSourceHandlerSetNotReady(s.ctx, req)
-
-		case newConf := <-s.chReloadConf:
-			s.conf = newConf
-			if !recreating {
-				cReloadConf := runReloadConf
-				cInnerCtx := runCtx
-				go func() {
-					select {
-					case cReloadConf <- newConf:
-					case <-cInnerCtx.Done():
-					}
-				}()
-			}
 
 		case <-recreateTimer.C:
 			recreate()

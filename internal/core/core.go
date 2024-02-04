@@ -46,9 +46,6 @@ type Core struct {
 	rtspsServer  *rtsp.Server
 	webRTCServer *webrtc.Server
 
-	// in
-	chAPIConfigSet chan *conf.Conf
-
 	// out
 	done chan struct{}
 }
@@ -82,10 +79,9 @@ func New(args []string) (*Core, bool) {
 	ctx, ctxCancel := context.WithCancel(context.Background())
 
 	p := &Core{
-		ctx:            ctx,
-		ctxCancel:      ctxCancel,
-		chAPIConfigSet: make(chan *conf.Conf),
-		done:           make(chan struct{}),
+		ctx:       ctx,
+		ctxCancel: ctxCancel,
+		done:      make(chan struct{}),
 	}
 
 	p.conf, p.confPath, err = conf.Load(cli.Confpath, defaultConfPaths)
@@ -135,15 +131,6 @@ func (p *Core) run() {
 outer:
 	for {
 		select {
-		case newConf := <-p.chAPIConfigSet:
-			p.Log(logger.Info, "reloading configuration (API request)")
-
-			err := p.reloadConf(newConf, true)
-			if err != nil {
-				p.Log(logger.Error, "%s", err)
-				break outer
-			}
-
 		case <-interrupt:
 			p.Log(logger.Info, "shutting down gracefully")
 			break outer
@@ -377,16 +364,8 @@ func (p *Core) closeResources(newConf *conf.Conf, calledByAPI bool) {
 	}
 }
 
-func (p *Core) reloadConf(newConf *conf.Conf, calledByAPI bool) error {
+func (p *Core) loadConf(newConf *conf.Conf, calledByAPI bool) error {
 	p.closeResources(newConf, calledByAPI)
 	p.conf = newConf
 	return p.createResources(false)
-}
-
-// APIConfigSet is called by api.
-func (p *Core) APIConfigSet(conf *conf.Conf) {
-	select {
-	case p.chAPIConfigSet <- conf:
-	case <-p.ctx.Done():
-	}
 }
