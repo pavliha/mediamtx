@@ -17,7 +17,6 @@ import (
 	"github.com/bluenviron/mediamtx/internal/confwatcher"
 	"github.com/bluenviron/mediamtx/internal/externalcmd"
 	"github.com/bluenviron/mediamtx/internal/logger"
-	"github.com/bluenviron/mediamtx/internal/rlimit"
 	"github.com/bluenviron/mediamtx/internal/servers/rtsp"
 	"github.com/bluenviron/mediamtx/internal/servers/webrtc"
 )
@@ -216,10 +215,6 @@ func (p *Core) createResources(initial bool) error {
 				"configuration file not found (looked in %s), using an empty configuration",
 				strings.Join(list, ", "))
 		}
-
-		// on Linux, try to raise the number of file descriptors that can be opened
-		// to allow the maximum possible number of clients.
-		rlimit.Raise() //nolint:errcheck
 
 		p.externalCmdPool = externalcmd.NewPool()
 	}
