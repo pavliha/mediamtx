@@ -14,7 +14,6 @@ import (
 
 	"github.com/bluenviron/mediamtx/internal/conf"
 	"github.com/bluenviron/mediamtx/internal/logger"
-	"github.com/bluenviron/mediamtx/internal/servers/rtsp"
 	"github.com/bluenviron/mediamtx/internal/servers/webrtc"
 )
 
@@ -41,8 +40,6 @@ type Core struct {
 	conf         *conf.Conf
 	logger       *logger.Logger
 	pathManager  *pathManager
-	rtspServer   *rtsp.Server
-	rtspsServer  *rtsp.Server
 	webRTCServer *webrtc.Server
 
 	// out
@@ -192,30 +189,6 @@ func (p *Core) createResources(initial bool) error {
 
 	}
 
-	if p.conf.RTSP &&
-		p.rtspServer == nil {
-
-		i := &rtsp.Server{
-			Address:           p.conf.RTSPAddress,
-			ReadTimeout:       p.conf.ReadTimeout,
-			WriteTimeout:      p.conf.WriteTimeout,
-			UseUDP:            true,
-			UseMulticast:      false,
-			RTPAddress:        p.conf.RTPAddress,
-			RTCPAddress:       p.conf.RTCPAddress,
-			MulticastRTCPPort: p.conf.MulticastRTCPPort,
-			RTSPAddress:       p.conf.RTSPAddress,
-			PathManager:       p.pathManager,
-			Parent:            p,
-		}
-		err := i.Initialize()
-		if err != nil {
-			return err
-		}
-		p.rtspServer = i
-
-	}
-
 	if p.conf.WebRTC &&
 		p.webRTCServer == nil {
 		i := &webrtc.Server{
@@ -261,29 +234,6 @@ func (p *Core) closeResources(newConf *conf.Conf, calledByAPI bool) {
 		newConf.UDPMaxPayloadSize != p.conf.UDPMaxPayloadSize ||
 		closeLogger
 
-	closeRTSPServer := newConf == nil ||
-		newConf.RTSP != p.conf.RTSP ||
-		newConf.RTSPAddress != p.conf.RTSPAddress ||
-		newConf.ReadTimeout != p.conf.ReadTimeout ||
-		newConf.WriteTimeout != p.conf.WriteTimeout ||
-		newConf.WriteQueueSize != p.conf.WriteQueueSize ||
-		newConf.RTPAddress != p.conf.RTPAddress ||
-		newConf.RTCPAddress != p.conf.RTCPAddress ||
-		newConf.MulticastRTCPPort != p.conf.MulticastRTCPPort ||
-		newConf.RTSPAddress != p.conf.RTSPAddress ||
-		closePathManager ||
-		closeLogger
-
-	closeRTSPSServer := newConf == nil ||
-		newConf.RTSP != p.conf.RTSP ||
-		newConf.RTSPSAddress != p.conf.RTSPSAddress ||
-		newConf.ReadTimeout != p.conf.ReadTimeout ||
-		newConf.WriteTimeout != p.conf.WriteTimeout ||
-		newConf.WriteQueueSize != p.conf.WriteQueueSize ||
-		newConf.RTSPAddress != p.conf.RTSPAddress ||
-		closePathManager ||
-		closeLogger
-
 	closeWebRTCServer := newConf == nil ||
 		newConf.WebRTC != p.conf.WebRTC ||
 		newConf.WebRTCAddress != p.conf.WebRTCAddress ||
@@ -306,18 +256,6 @@ func (p *Core) closeResources(newConf *conf.Conf, calledByAPI bool) {
 
 		p.webRTCServer.Close()
 		p.webRTCServer = nil
-	}
-
-	if closeRTSPSServer && p.rtspsServer != nil {
-
-		p.rtspsServer.Close()
-		p.rtspsServer = nil
-	}
-
-	if closeRTSPServer && p.rtspServer != nil {
-
-		p.rtspServer.Close()
-		p.rtspServer = nil
 	}
 
 	if closePathManager && p.pathManager != nil {

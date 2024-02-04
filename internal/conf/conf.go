@@ -97,7 +97,6 @@ type Conf struct {
 	RTSPAddress       string    `json:"rtspAddress"`
 	RTSPSAddress      string    `json:"rtspsAddress"`
 	RTPAddress        string    `json:"rtpAddress"`
-	RTCPAddress       string    `json:"rtcpAddress"`
 	MulticastIPRange  string    `json:"multicastIPRange"`
 	MulticastRTPPort  int       `json:"multicastRTPPort"`
 	MulticastRTCPPort int       `json:"multicastRTCPPort"`
@@ -151,7 +150,6 @@ func (conf *Conf) setDefaults() {
 	conf.RTSPAddress = ":8554"
 	conf.RTSPSAddress = ":8322"
 	conf.RTPAddress = ":8000"
-	conf.RTCPAddress = ":8001"
 	conf.MulticastIPRange = "224.1.0.0/16"
 	conf.MulticastRTPPort = 8002
 	conf.MulticastRTCPPort = 8003
