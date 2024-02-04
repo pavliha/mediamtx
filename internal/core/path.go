@@ -40,18 +40,17 @@ const (
 )
 
 type path struct {
-	parentCtx         context.Context
-	logLevel          conf.LogLevel
-	readTimeout       conf.StringDuration
-	writeTimeout      conf.StringDuration
-	writeQueueSize    int
-	udpMaxPayloadSize int
-	confName          string
-	conf              *conf.Path
-	name              string
-	matches           []string
-	wg                *sync.WaitGroup
-	parent            pathParent
+	parentCtx      context.Context
+	logLevel       conf.LogLevel
+	readTimeout    conf.StringDuration
+	writeTimeout   conf.StringDuration
+	writeQueueSize int
+	confName       string
+	conf           *conf.Path
+	name           string
+	matches        []string
+	wg             *sync.WaitGroup
+	parent         pathParent
 
 	ctx                            context.Context
 	ctxCancel                      func()
@@ -500,7 +499,6 @@ func (pa *path) onDemandPublisherStop(reason string) {
 func (pa *path) setReady(desc *description.Session, allocateEncoder bool) error {
 	var err error
 	pa.stream, err = stream.New(
-		pa.udpMaxPayloadSize,
 		desc,
 		allocateEncoder,
 		logger.NewLimitedLogger(pa.source),

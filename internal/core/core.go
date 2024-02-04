@@ -168,13 +168,11 @@ func (p *Core) createResources() error {
 	}
 
 	p.pathManager = &pathManager{
-		logLevel:          p.conf.LogLevel,
-		readTimeout:       p.conf.ReadTimeout,
-		writeTimeout:      p.conf.WriteTimeout,
-		writeQueueSize:    p.conf.WriteQueueSize,
-		udpMaxPayloadSize: p.conf.UDPMaxPayloadSize,
-		pathConfs:         p.conf.Paths,
-		parent:            p,
+		logLevel:     p.conf.LogLevel,
+		readTimeout:  p.conf.ReadTimeout,
+		writeTimeout: p.conf.WriteTimeout,
+		pathConfs:    p.conf.Paths,
+		parent:       p,
 	}
 	p.pathManager.initialize()
 
@@ -185,7 +183,6 @@ func (p *Core) createResources() error {
 		Encryption:            p.conf.WebRTCEncryption,
 		AllowOrigin:           p.conf.WebRTCAllowOrigin,
 		ReadTimeout:           p.conf.ReadTimeout,
-		WriteQueueSize:        p.conf.WriteQueueSize,
 		LocalUDPAddress:       p.conf.WebRTCLocalUDPAddress,
 		LocalTCPAddress:       p.conf.WebRTCLocalTCPAddress,
 		IPsFromInterfaces:     p.conf.WebRTCIPsFromInterfaces,
@@ -214,8 +211,6 @@ func (p *Core) closeResources(newConf *conf.Conf, calledByAPI bool) {
 		newConf.LogLevel != p.conf.LogLevel ||
 		newConf.ReadTimeout != p.conf.ReadTimeout ||
 		newConf.WriteTimeout != p.conf.WriteTimeout ||
-		newConf.WriteQueueSize != p.conf.WriteQueueSize ||
-		newConf.UDPMaxPayloadSize != p.conf.UDPMaxPayloadSize ||
 		closeLogger
 
 	closeWebRTCServer := newConf == nil ||
@@ -224,7 +219,6 @@ func (p *Core) closeResources(newConf *conf.Conf, calledByAPI bool) {
 		newConf.WebRTCEncryption != p.conf.WebRTCEncryption ||
 		newConf.WebRTCAllowOrigin != p.conf.WebRTCAllowOrigin ||
 		newConf.ReadTimeout != p.conf.ReadTimeout ||
-		newConf.WriteQueueSize != p.conf.WriteQueueSize ||
 		newConf.WebRTCLocalUDPAddress != p.conf.WebRTCLocalUDPAddress ||
 		newConf.WebRTCLocalTCPAddress != p.conf.WebRTCLocalTCPAddress ||
 		newConf.WebRTCIPsFromInterfaces != p.conf.WebRTCIPsFromInterfaces ||

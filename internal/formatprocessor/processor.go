@@ -34,16 +34,15 @@ type Processor interface {
 
 // New allocates a Processor.
 func New(
-	udpMaxPayloadSize int,
 	forma format.Format,
 	generateRTPPackets bool,
 ) (Processor, error) {
 	switch forma := forma.(type) {
 
 	case *format.H264:
-		return newH264(udpMaxPayloadSize, forma, generateRTPPackets)
+		return newH264(forma, generateRTPPackets)
 
 	default:
-		return newGeneric(udpMaxPayloadSize, forma, generateRTPPackets)
+		return newGeneric(forma, generateRTPPackets)
 	}
 }

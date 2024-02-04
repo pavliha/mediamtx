@@ -33,7 +33,6 @@ type Stream struct {
 
 // New allocates a Stream.
 func New(
-	udpMaxPayloadSize int,
 	desc *description.Session,
 	generateRTPPackets bool,
 	decodeErrLogger logger.Writer,
@@ -48,7 +47,7 @@ func New(
 
 	for _, media := range desc.Medias {
 		var err error
-		s.smedias[media], err = newStreamMedia(udpMaxPayloadSize, media, generateRTPPackets, decodeErrLogger)
+		s.smedias[media], err = newStreamMedia(media, generateRTPPackets, decodeErrLogger)
 		if err != nil {
 			return nil, err
 		}
@@ -77,21 +76,6 @@ func (s *Stream) BytesReceived() uint64 {
 	return atomic.LoadUint64(s.bytesReceived)
 }
 
-// BytesSent returns sent bytes.
-func (s *Stream) BytesSent() uint64 {
-	s.mutex.RLock()
-	defer s.mutex.RUnlock()
-
-	bytesSent := atomic.LoadUint64(s.bytesSent)
-	if s.rtspStream != nil {
-		bytesSent += s.rtspStream.BytesSent()
-	}
-	if s.rtspsStream != nil {
-		bytesSent += s.rtspsStream.BytesSent()
-	}
-	return bytesSent
-}
-
 // RTSPStream returns the RTSP stream.
 func (s *Stream) RTSPStream(server *gortsplib.Server) *gortsplib.ServerStream {
 	s.mutex.Lock()
@@ -101,17 +85,6 @@ func (s *Stream) RTSPStream(server *gortsplib.Server) *gortsplib.ServerStream {
 		s.rtspStream = gortsplib.NewServerStream(server, s.desc)
 	}
 	return s.rtspStream
-}
-
-// RTSPSStream returns the RTSPS stream.
-func (s *Stream) RTSPSStream(server *gortsplib.Server) *gortsplib.ServerStream {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-
-	if s.rtspsStream == nil {
-		s.rtspsStream = gortsplib.NewServerStream(server, s.desc)
-	}
-	return s.rtspsStream
 }
 
 // AddReader adds a reader.

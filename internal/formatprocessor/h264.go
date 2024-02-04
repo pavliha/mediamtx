@@ -13,6 +13,8 @@ import (
 	"github.com/bluenviron/mediamtx/internal/unit"
 )
 
+const UDP_MAX_PAYLOAD_SIZE = 1472
+
 // extract SPS and PPS without decoding RTP packets
 func rtpH264ExtractParams(payload []byte) ([]byte, []byte) {
 	if len(payload) < 1 {
@@ -71,21 +73,18 @@ func rtpH264ExtractParams(payload []byte) ([]byte, []byte) {
 }
 
 type formatProcessorH264 struct {
-	udpMaxPayloadSize int
-	format            *format.H264
+	format *format.H264
 
 	encoder *rtph264.Encoder
 	decoder *rtph264.Decoder
 }
 
 func newH264(
-	udpMaxPayloadSize int,
 	forma *format.H264,
 	generateRTPPackets bool,
 ) (*formatProcessorH264, error) {
 	t := &formatProcessorH264{
-		udpMaxPayloadSize: udpMaxPayloadSize,
-		format:            forma,
+		format: forma,
 	}
 
 	if generateRTPPackets {
@@ -103,7 +102,7 @@ func (t *formatProcessorH264) createEncoder(
 	initialSequenceNumber *uint16,
 ) error {
 	t.encoder = &rtph264.Encoder{
-		PayloadMaxSize:        t.udpMaxPayloadSize - 12,
+		PayloadMaxSize:        UDP_MAX_PAYLOAD_SIZE - 12,
 		PayloadType:           t.format.PayloadTyp,
 		SSRC:                  ssrc,
 		InitialSequenceNumber: initialSequenceNumber,
@@ -257,7 +256,7 @@ func (t *formatProcessorH264) ProcessRTPPacket( //nolint:dupl
 		pkt.PaddingSize = 0
 
 		// RTP packets exceed maximum size: start re-encoding them
-		if pkt.MarshalSize() > t.udpMaxPayloadSize {
+		if pkt.MarshalSize() > UDP_MAX_PAYLOAD_SIZE {
 			v1 := pkt.SSRC
 			v2 := pkt.SequenceNumber
 			err := t.createEncoder(&v1, &v2)

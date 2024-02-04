@@ -281,13 +281,12 @@ outer:
 		select {
 		case req := <-s.chNewSession:
 			sx := &session{
-				parentCtx:      s.ctx,
-				writeQueueSize: s.WriteQueueSize,
-				api:            s.api,
-				req:            req,
-				wg:             &wg,
-				pathManager:    s.PathManager,
-				parent:         s,
+				parentCtx:   s.ctx,
+				api:         s.api,
+				req:         req,
+				wg:          &wg,
+				pathManager: s.PathManager,
+				parent:      s,
 			}
 			sx.initialize()
 			s.sessions[sx] = struct{}{}

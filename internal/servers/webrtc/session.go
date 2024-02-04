@@ -28,6 +28,8 @@ import (
 
 type setupStreamFunc func(*webrtc.OutgoingTrack) error
 
+const WRITE_QUEUE_SIZE = 512
+
 func findVideoTrack(
 	stream *stream.Stream,
 	writer *asyncwriter.Writer,
@@ -92,13 +94,12 @@ func whipOffer(body []byte) *pwebrtc.SessionDescription {
 }
 
 type session struct {
-	parentCtx      context.Context
-	writeQueueSize int
-	api            *pwebrtc.API
-	req            webRTCNewSessionReq
-	wg             *sync.WaitGroup
-	pathManager    defs.PathManager
-	parent         *Server
+	parentCtx   context.Context
+	api         *pwebrtc.API
+	req         webRTCNewSessionReq
+	wg          *sync.WaitGroup
+	pathManager defs.PathManager
+	parent      *Server
 
 	ctx       context.Context
 	ctxCancel func()
@@ -342,7 +343,7 @@ func (s *session) runRead() (int, error) {
 	}
 	defer pc.Close()
 
-	writer := asyncwriter.New(s.writeQueueSize, s)
+	writer := asyncwriter.New(WRITE_QUEUE_SIZE, s)
 
 	videoTrack, videoSetup := findVideoTrack(res.Stream, writer)
 

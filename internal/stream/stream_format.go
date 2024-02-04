@@ -29,12 +29,11 @@ type streamFormat struct {
 }
 
 func newStreamFormat(
-	udpMaxPayloadSize int,
 	forma format.Format,
 	generateRTPPackets bool,
 	decodeErrLogger logger.Writer,
 ) (*streamFormat, error) {
-	proc, err := formatprocessor.New(udpMaxPayloadSize, forma, generateRTPPackets)
+	proc, err := formatprocessor.New(forma, generateRTPPackets)
 	if err != nil {
 		return nil, err
 	}

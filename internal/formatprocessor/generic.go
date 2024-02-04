@@ -15,7 +15,6 @@ type formatProcessorGeneric struct {
 }
 
 func newGeneric(
-	udpMaxPayloadSize int,
 	forma format.Format,
 	generateRTPPackets bool,
 ) (*formatProcessorGeneric, error) {
@@ -24,7 +23,7 @@ func newGeneric(
 	}
 
 	return &formatProcessorGeneric{
-		udpMaxPayloadSize: udpMaxPayloadSize,
+		udpMaxPayloadSize: UDP_MAX_PAYLOAD_SIZE,
 	}, nil
 }
 
@@ -50,9 +49,9 @@ func (t *formatProcessorGeneric) ProcessRTPPacket(
 	pkt.Header.Padding = false
 	pkt.PaddingSize = 0
 
-	if pkt.MarshalSize() > t.udpMaxPayloadSize {
+	if pkt.MarshalSize() > UDP_MAX_PAYLOAD_SIZE {
 		return nil, fmt.Errorf("payload size (%d) is greater than maximum allowed (%d)",
-			pkt.MarshalSize(), t.udpMaxPayloadSize)
+			pkt.MarshalSize(), UDP_MAX_PAYLOAD_SIZE)
 	}
 
 	return u, nil

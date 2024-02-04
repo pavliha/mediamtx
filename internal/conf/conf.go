@@ -80,14 +80,12 @@ func copyStructFields(dest interface{}, source interface{}) {
 // Conf is a configuration.
 type Conf struct {
 	// General
-	LogLevel          LogLevel        `json:"logLevel"`
-	LogDestinations   LogDestinations `json:"logDestinations"`
-	LogFile           string          `json:"logFile"`
-	ReadTimeout       StringDuration  `json:"readTimeout"`
-	WriteTimeout      StringDuration  `json:"writeTimeout"`
-	ReadBufferCount   *int            `json:"readBufferCount,omitempty"` // deprecated
-	WriteQueueSize    int             `json:"writeQueueSize"`
-	UDPMaxPayloadSize int             `json:"udpMaxPayloadSize"`
+	LogLevel        LogLevel        `json:"logLevel"`
+	LogDestinations LogDestinations `json:"logDestinations"`
+	LogFile         string          `json:"logFile"`
+	ReadTimeout     StringDuration  `json:"readTimeout"`
+	WriteTimeout    StringDuration  `json:"writeTimeout"`
+	ReadBufferCount *int            `json:"readBufferCount,omitempty"` // deprecated
 
 	// WebRTC server
 	WebRTC                      bool              `json:"webrtc"`
@@ -121,8 +119,6 @@ func (conf *Conf) setDefaults() {
 	conf.LogFile = "mediamtx.log"
 	conf.ReadTimeout = 10 * StringDuration(time.Second)
 	conf.WriteTimeout = 10 * StringDuration(time.Second)
-	conf.WriteQueueSize = 512
-	conf.UDPMaxPayloadSize = 1472
 
 	// WebRTC server
 	conf.WebRTC = true
@@ -198,16 +194,6 @@ func (conf Conf) Clone() *Conf {
 // Validate checks the configuration for errors.
 func (conf *Conf) Validate() error {
 	// General
-
-	if conf.ReadBufferCount != nil {
-		conf.WriteQueueSize = *conf.ReadBufferCount
-	}
-	if (conf.WriteQueueSize & (conf.WriteQueueSize - 1)) != 0 {
-		return fmt.Errorf("'writeQueueSize' must be a power of two")
-	}
-	if conf.UDPMaxPayloadSize > 1472 {
-		return fmt.Errorf("'udpMaxPayloadSize' must be less than 1472")
-	}
 
 	// WebRTC
 
