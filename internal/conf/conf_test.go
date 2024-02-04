@@ -120,9 +120,6 @@ func TestConfFromFileAndEnv(t *testing.T) {
 	// path parameter
 	t.Setenv("MTX_PATHS_CAM1_SOURCE", "rtsp://testing")
 
-	// deprecated global parameter
-	t.Setenv("MTX_RTMPDISABLE", "yes")
-
 	// deprecated path parameter
 	t.Setenv("MTX_PATHS_CAM2_DISABLEPUBLISHEROVERRIDE", "yes")
 
@@ -135,7 +132,6 @@ func TestConfFromFileAndEnv(t *testing.T) {
 	require.Equal(t, tmpf, confPath)
 
 	require.Equal(t, Protocols{Protocol(gortsplib.TransportTCP): {}}, conf.Protocols)
-	require.Equal(t, false, conf.RTMP)
 
 	pa, ok := conf.Paths["cam1"]
 	require.Equal(t, true, ok)

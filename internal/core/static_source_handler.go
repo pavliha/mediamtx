@@ -9,12 +9,7 @@ import (
 	"github.com/bluenviron/mediamtx/internal/conf"
 	"github.com/bluenviron/mediamtx/internal/defs"
 	"github.com/bluenviron/mediamtx/internal/logger"
-	hlssource "github.com/bluenviron/mediamtx/internal/staticsources/hls"
-	rpicamerasource "github.com/bluenviron/mediamtx/internal/staticsources/rpicamera"
-	rtmpsource "github.com/bluenviron/mediamtx/internal/staticsources/rtmp"
 	rtspsource "github.com/bluenviron/mediamtx/internal/staticsources/rtsp"
-	srtsource "github.com/bluenviron/mediamtx/internal/staticsources/srt"
-	udpsource "github.com/bluenviron/mediamtx/internal/staticsources/udp"
 	webrtcsource "github.com/bluenviron/mediamtx/internal/staticsources/webrtc"
 )
 
@@ -68,49 +63,12 @@ func (s *staticSourceHandler) initialize() {
 			Parent:         s,
 		}
 
-	case strings.HasPrefix(s.resolvedSource, "rtmp://") ||
-		strings.HasPrefix(s.resolvedSource, "rtmps://"):
-		s.instance = &rtmpsource.Source{
-			ResolvedSource: s.resolvedSource,
-			ReadTimeout:    s.readTimeout,
-			WriteTimeout:   s.writeTimeout,
-			Parent:         s,
-		}
-
-	case strings.HasPrefix(s.resolvedSource, "http://") ||
-		strings.HasPrefix(s.resolvedSource, "https://"):
-		s.instance = &hlssource.Source{
-			ResolvedSource: s.resolvedSource,
-			ReadTimeout:    s.readTimeout,
-			Parent:         s,
-		}
-
-	case strings.HasPrefix(s.resolvedSource, "udp://"):
-		s.instance = &udpsource.Source{
-			ResolvedSource: s.resolvedSource,
-			ReadTimeout:    s.readTimeout,
-			Parent:         s,
-		}
-
-	case strings.HasPrefix(s.resolvedSource, "srt://"):
-		s.instance = &srtsource.Source{
-			ResolvedSource: s.resolvedSource,
-			ReadTimeout:    s.readTimeout,
-			Parent:         s,
-		}
-
 	case strings.HasPrefix(s.resolvedSource, "whep://") ||
 		strings.HasPrefix(s.resolvedSource, "wheps://"):
 		s.instance = &webrtcsource.Source{
 			ResolvedSource: s.resolvedSource,
 			ReadTimeout:    s.readTimeout,
 			Parent:         s,
-		}
-
-	case s.resolvedSource == "rpiCamera":
-		s.instance = &rpicamerasource.Source{
-			LogLevel: s.logLevel,
-			Parent:   s,
 		}
 	}
 }

@@ -13,10 +13,7 @@ import (
 
 	"github.com/bluenviron/gortsplib/v4/pkg/description"
 	"github.com/bluenviron/gortsplib/v4/pkg/format"
-	"github.com/bluenviron/gortsplib/v4/pkg/format/rtpav1"
 	"github.com/bluenviron/gortsplib/v4/pkg/format/rtph264"
-	"github.com/bluenviron/gortsplib/v4/pkg/format/rtpvp8"
-	"github.com/bluenviron/gortsplib/v4/pkg/format/rtpvp9"
 	"github.com/bluenviron/gortsplib/v4/pkg/rtptime"
 	"github.com/google/uuid"
 	"github.com/pion/sdp/v3"
@@ -38,122 +35,9 @@ func findVideoTrack(
 	stream *stream.Stream,
 	writer *asyncwriter.Writer,
 ) (format.Format, setupStreamFunc) {
-	var av1Format *format.AV1
-	media := stream.Desc().FindFormat(&av1Format)
-
-	if av1Format != nil {
-		return av1Format, func(track *webrtc.OutgoingTrack) error {
-			encoder := &rtpav1.Encoder{
-				PayloadType:    105,
-				PayloadMaxSize: webrtcPayloadMaxSize,
-			}
-			err := encoder.Init()
-			if err != nil {
-				return err
-			}
-
-			stream.AddReader(writer, media, av1Format, func(u unit.Unit) error {
-				tunit := u.(*unit.AV1)
-
-				if tunit.TU == nil {
-					return nil
-				}
-
-				packets, err := encoder.Encode(tunit.TU)
-				if err != nil {
-					return nil //nolint:nilerr
-				}
-
-				for _, pkt := range packets {
-					pkt.Timestamp += tunit.RTPPackets[0].Timestamp
-					track.WriteRTP(pkt) //nolint:errcheck
-				}
-
-				return nil
-			})
-
-			return nil
-		}
-	}
-
-	var vp9Format *format.VP9
-	media = stream.Desc().FindFormat(&vp9Format)
-
-	if vp9Format != nil {
-		return vp9Format, func(track *webrtc.OutgoingTrack) error {
-			encoder := &rtpvp9.Encoder{
-				PayloadType:    96,
-				PayloadMaxSize: webrtcPayloadMaxSize,
-			}
-			err := encoder.Init()
-			if err != nil {
-				return err
-			}
-
-			stream.AddReader(writer, media, vp9Format, func(u unit.Unit) error {
-				tunit := u.(*unit.VP9)
-
-				if tunit.Frame == nil {
-					return nil
-				}
-
-				packets, err := encoder.Encode(tunit.Frame)
-				if err != nil {
-					return nil //nolint:nilerr
-				}
-
-				for _, pkt := range packets {
-					pkt.Timestamp += tunit.RTPPackets[0].Timestamp
-					track.WriteRTP(pkt) //nolint:errcheck
-				}
-
-				return nil
-			})
-
-			return nil
-		}
-	}
-
-	var vp8Format *format.VP8
-	media = stream.Desc().FindFormat(&vp8Format)
-
-	if vp8Format != nil {
-		return vp8Format, func(track *webrtc.OutgoingTrack) error {
-			encoder := &rtpvp8.Encoder{
-				PayloadType:    96,
-				PayloadMaxSize: webrtcPayloadMaxSize,
-			}
-			err := encoder.Init()
-			if err != nil {
-				return err
-			}
-
-			stream.AddReader(writer, media, vp8Format, func(u unit.Unit) error {
-				tunit := u.(*unit.VP8)
-
-				if tunit.Frame == nil {
-					return nil
-				}
-
-				packets, err := encoder.Encode(tunit.Frame)
-				if err != nil {
-					return nil //nolint:nilerr
-				}
-
-				for _, pkt := range packets {
-					pkt.Timestamp += tunit.RTPPackets[0].Timestamp
-					track.WriteRTP(pkt) //nolint:errcheck
-				}
-
-				return nil
-			})
-
-			return nil
-		}
-	}
 
 	var h264Format *format.H264
-	media = stream.Desc().FindFormat(&h264Format)
+	media := stream.Desc().FindFormat(&h264Format)
 
 	if h264Format != nil {
 		return h264Format, func(track *webrtc.OutgoingTrack) error {

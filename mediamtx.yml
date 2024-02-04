@@ -121,82 +121,6 @@ serverCert: server.crt
 authMethods: [basic]
 
 ###############################################
-# Global settings -> RTMP server
-
-# Enable publishing and reading streams with the RTMP protocol.
-rtmp: yes
-# Address of the RTMP listener. This is needed only when encryption is "no" or "optional".
-rtmpAddress: :1935
-# Encrypt connections with TLS (RTMPS).
-# Available values are "no", "strict", "optional".
-rtmpEncryption: "no"
-# Address of the RTMPS listener. This is needed only when encryption is "strict" or "optional".
-rtmpsAddress: :1936
-# Path to the server key. This is needed only when encryption is "strict" or "optional".
-# This can be generated with:
-# openssl genrsa -out server.key 2048
-# openssl req -new -x509 -sha256 -key server.key -out server.crt -days 3650
-rtmpServerKey: server.key
-# Path to the server certificate. This is needed only when encryption is "strict" or "optional".
-rtmpServerCert: server.crt
-
-###############################################
-# Global settings -> HLS server
-
-# Enable reading streams with the HLS protocol.
-hls: yes
-# Address of the HLS listener.
-hlsAddress: :8888
-# Enable TLS/HTTPS on the HLS server.
-# This is required for Low-Latency HLS.
-hlsEncryption: no
-# Path to the server key. This is needed only when encryption is yes.
-# This can be generated with:
-# openssl genrsa -out server.key 2048
-# openssl req -new -x509 -sha256 -key server.key -out server.crt -days 3650
-hlsServerKey: server.key
-# Path to the server certificate.
-hlsServerCert: server.crt
-# By default, HLS is generated only when requested by a user.
-# This option allows to generate it always, avoiding the delay between request and generation.
-hlsAlwaysRemux: no
-# Variant of the HLS protocol to use. Available options are:
-# * mpegts - uses MPEG-TS segments, for maximum compatibility.
-# * fmp4 - uses fragmented MP4 segments, more efficient.
-# * lowLatency - uses Low-Latency HLS.
-hlsVariant: lowLatency
-# Number of HLS segments to keep on the server.
-# Segments allow to seek through the stream.
-# Their number doesn't influence latency.
-hlsSegmentCount: 7
-# Minimum duration of each segment.
-# A player usually puts 3 segments in a buffer before reproducing the stream.
-# The final segment duration is also influenced by the interval between IDR frames,
-# since the server changes the duration in order to include at least one IDR frame
-# in each segment.
-hlsSegmentDuration: 1s
-# Minimum duration of each part.
-# A player usually puts 3 parts in a buffer before reproducing the stream.
-# Parts are used in Low-Latency HLS in place of segments.
-# Part duration is influenced by the distance between video/audio samples
-# and is adjusted in order to produce segments with a similar duration.
-hlsPartDuration: 200ms
-# Maximum size of each segment.
-# This prevents RAM exhaustion.
-hlsSegmentMaxSize: 50M
-# Value of the Access-Control-Allow-Origin header provided in every HTTP response.
-# This allows to play the HLS stream from an external website.
-hlsAllowOrigin: '*'
-# List of IPs or CIDRs of proxies placed before the HLS server.
-# If the server receives a request from one of these entries, IP in logs
-# will be taken from the X-Forwarded-For header.
-hlsTrustedProxies: []
-# Directory in which to save segments, instead of keeping them in the RAM.
-# This decreases performance, since reading from disk is less performant than
-# reading from RAM, but allows to save RAM.
-hlsDirectory: ''
-
-###############################################
 # Global settings -> WebRTC server
 
 # Enable publishing and reading streams with the WebRTC protocol.
@@ -245,14 +169,6 @@ webrtcICEServers2: []
   # password: ''
 
 ###############################################
-# Global settings -> SRT server
-
-# Enable publishing and reading streams with the SRT protocol.
-srt: yes
-# Address of the SRT listener.
-srtAddress: :8890
-
-###############################################
 # Default path settings
 
 # Settings in "pathDefaults" are applied anywhere,
@@ -263,15 +179,12 @@ pathDefaults:
   # Default path settings -> General
 
   # Source of the stream. This can be:
-  # * publisher -> the stream is provided by a RTSP, RTMP, WebRTC or SRT client
+  # * publisher -> the stream is provided by a RTSP, WebRTC client
   # * rtsp://existing-url -> the stream is pulled from another RTSP server / camera
   # * rtsps://existing-url -> the stream is pulled from another RTSP server / camera with RTSPS
-  # * rtmp://existing-url -> the stream is pulled from another RTMP server / camera
-  # * rtmps://existing-url -> the stream is pulled from another RTMP server / camera with RTMPS
   # * http://existing-url/stream.m3u8 -> the stream is pulled from another HLS server / camera
   # * https://existing-url/stream.m3u8 -> the stream is pulled from another HLS server / camera with HTTPS
   # * udp://ip:port -> the stream is pulled with UDP, by listening on the specified IP and port
-  # * srt://existing-url -> the stream is pulled from another SRT server / camera
   # * whep://existing-url -> the stream is pulled from another WebRTC server / camera
   # * wheps://existing-url -> the stream is pulled from another WebRTC server / camera with HTTPS
   # * redirect -> the stream is provided by another path or server
@@ -569,8 +482,8 @@ pathDefaults:
 # for example "~^prefix" will match all paths that start with "prefix".
 paths:
   # example:
-  # my_camera:
-  #   source: rtsp://my_camera
+  camera:
+     source: "rtsp://192.168.2.119:554"
 
   # Settings under path "all_others" are applied to all paths that
   # do not match another entry.

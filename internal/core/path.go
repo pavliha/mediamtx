@@ -17,7 +17,6 @@ import (
 	"github.com/bluenviron/mediamtx/internal/externalcmd"
 	"github.com/bluenviron/mediamtx/internal/hooks"
 	"github.com/bluenviron/mediamtx/internal/logger"
-	"github.com/bluenviron/mediamtx/internal/record"
 	"github.com/bluenviron/mediamtx/internal/stream"
 )
 
@@ -85,7 +84,6 @@ type path struct {
 	source                         defs.Source
 	publisherQuery                 string
 	stream                         *stream.Stream
-	recordAgent                    *record.Agent
 	readyTime                      time.Time
 	onUnDemandHook                 func(string)
 	onNotReadyHook                 func()
@@ -374,14 +372,6 @@ func (pa *path) doReloadConf(newConf *conf.Path) {
 		go pa.source.(*staticSourceHandler).reloadConf(newConf)
 	}
 
-	if pa.conf.Record {
-		if pa.stream != nil && pa.recordAgent == nil {
-			pa.startRecording()
-		}
-	} else if pa.recordAgent != nil {
-		pa.recordAgent.Close()
-		pa.recordAgent = nil
-	}
 }
 
 func (pa *path) doSourceStaticSetReady(req defs.PathSourceStaticSetReadyReq) {
@@ -728,10 +718,6 @@ func (pa *path) setReady(desc *description.Session, allocateEncoder bool) error 
 		return err
 	}
 
-	if pa.conf.Record {
-		pa.startRecording()
-	}
-
 	pa.readyTime = time.Now()
 
 	pa.onNotReadyHook = hooks.OnReady(hooks.OnReadyParams{
@@ -772,57 +758,10 @@ func (pa *path) setNotReady() {
 
 	pa.onNotReadyHook()
 
-	if pa.recordAgent != nil {
-		pa.recordAgent.Close()
-		pa.recordAgent = nil
-	}
-
 	if pa.stream != nil {
 		pa.stream.Close()
 		pa.stream = nil
 	}
-}
-
-func (pa *path) startRecording() {
-	pa.recordAgent = &record.Agent{
-		WriteQueueSize:  pa.writeQueueSize,
-		PathFormat:      pa.conf.RecordPath,
-		Format:          pa.conf.RecordFormat,
-		PartDuration:    time.Duration(pa.conf.RecordPartDuration),
-		SegmentDuration: time.Duration(pa.conf.RecordSegmentDuration),
-		PathName:        pa.name,
-		Stream:          pa.stream,
-		OnSegmentCreate: func(segmentPath string) {
-			if pa.conf.RunOnRecordSegmentCreate != "" {
-				env := pa.ExternalCmdEnv()
-				env["MTX_SEGMENT_PATH"] = segmentPath
-
-				pa.Log(logger.Info, "runOnRecordSegmentCreate command launched")
-				externalcmd.NewCmd(
-					pa.externalCmdPool,
-					pa.conf.RunOnRecordSegmentCreate,
-					false,
-					env,
-					nil)
-			}
-		},
-		OnSegmentComplete: func(segmentPath string) {
-			if pa.conf.RunOnRecordSegmentComplete != "" {
-				env := pa.ExternalCmdEnv()
-				env["MTX_SEGMENT_PATH"] = segmentPath
-
-				pa.Log(logger.Info, "runOnRecordSegmentComplete command launched")
-				externalcmd.NewCmd(
-					pa.externalCmdPool,
-					pa.conf.RunOnRecordSegmentComplete,
-					false,
-					env,
-					nil)
-			}
-		},
-		Parent: pa,
-	}
-	pa.recordAgent.Initialize()
 }
 
 func (pa *path) executeRemoveReader(r defs.Reader) {

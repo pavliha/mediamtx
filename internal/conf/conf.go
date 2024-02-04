@@ -12,7 +12,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/bluenviron/gohlslib"
 	"github.com/bluenviron/gortsplib/v4"
 	"github.com/bluenviron/gortsplib/v4/pkg/headers"
 
@@ -126,32 +125,6 @@ type Conf struct {
 	ServerCert        string      `json:"serverCert"`
 	AuthMethods       AuthMethods `json:"authMethods"`
 
-	// RTMP server
-	RTMP           bool       `json:"rtmp"`
-	RTMPDisable    *bool      `json:"rtmpDisable,omitempty"` // deprecated
-	RTMPAddress    string     `json:"rtmpAddress"`
-	RTMPEncryption Encryption `json:"rtmpEncryption"`
-	RTMPSAddress   string     `json:"rtmpsAddress"`
-	RTMPServerKey  string     `json:"rtmpServerKey"`
-	RTMPServerCert string     `json:"rtmpServerCert"`
-
-	// HLS server
-	HLS                bool           `json:"hls"`
-	HLSDisable         *bool          `json:"hlsDisable,omitempty"` // depreacted
-	HLSAddress         string         `json:"hlsAddress"`
-	HLSEncryption      bool           `json:"hlsEncryption"`
-	HLSServerKey       string         `json:"hlsServerKey"`
-	HLSServerCert      string         `json:"hlsServerCert"`
-	HLSAlwaysRemux     bool           `json:"hlsAlwaysRemux"`
-	HLSVariant         HLSVariant     `json:"hlsVariant"`
-	HLSSegmentCount    int            `json:"hlsSegmentCount"`
-	HLSSegmentDuration StringDuration `json:"hlsSegmentDuration"`
-	HLSPartDuration    StringDuration `json:"hlsPartDuration"`
-	HLSSegmentMaxSize  StringSize     `json:"hlsSegmentMaxSize"`
-	HLSAllowOrigin     string         `json:"hlsAllowOrigin"`
-	HLSTrustedProxies  IPsOrCIDRs     `json:"hlsTrustedProxies"`
-	HLSDirectory       string         `json:"hlsDirectory"`
-
 	// WebRTC server
 	WebRTC                      bool              `json:"webrtc"`
 	WebRTCDisable               *bool             `json:"webrtcDisable,omitempty"` // deprecated
@@ -171,18 +144,6 @@ type Conf struct {
 	WebRTCICETCPMuxAddress      *string           `json:"webrtcICETCPMuxAddress,omitempty"`  // deprecated
 	WebRTCICEHostNAT1To1IPs     *[]string         `json:"webrtcICEHostNAT1To1IPs,omitempty"` // deprecated
 	WebRTCICEServers            *[]string         `json:"webrtcICEServers,omitempty"`        // deprecated
-
-	// SRT server
-	SRT        bool   `json:"srt"`
-	SRTAddress string `json:"srtAddress"`
-
-	// Record (deprecated)
-	Record                *bool           `json:"record,omitempty"`                // deprecated
-	RecordPath            *string         `json:"recordPath,omitempty"`            // deprecated
-	RecordFormat          *RecordFormat   `json:"recordFormat,omitempty"`          // deprecated
-	RecordPartDuration    *StringDuration `json:"recordPartDuration,omitempty"`    // deprecated
-	RecordSegmentDuration *StringDuration `json:"recordSegmentDuration,omitempty"` // deprecated
-	RecordDeleteAfter     *StringDuration `json:"recordDeleteAfter,omitempty"`     // deprecated
 
 	// Path defaults
 	PathDefaults Path `json:"pathDefaults"`
@@ -228,25 +189,6 @@ func (conf *Conf) setDefaults() {
 	conf.ServerCert = "server.crt"
 	conf.AuthMethods = AuthMethods{headers.AuthBasic}
 
-	// RTMP server
-	conf.RTMP = true
-	conf.RTMPAddress = ":1935"
-	conf.RTMPSAddress = ":1936"
-	conf.RTMPServerKey = "server.key"
-	conf.RTMPServerCert = "server.crt"
-
-	// HLS
-	conf.HLS = true
-	conf.HLSAddress = ":8888"
-	conf.HLSServerKey = "server.key"
-	conf.HLSServerCert = "server.crt"
-	conf.HLSVariant = HLSVariant(gohlslib.MuxerVariantLowLatency)
-	conf.HLSSegmentCount = 7
-	conf.HLSSegmentDuration = 1 * StringDuration(time.Second)
-	conf.HLSPartDuration = 200 * StringDuration(time.Millisecond)
-	conf.HLSSegmentMaxSize = 50 * 1024 * 1024
-	conf.HLSAllowOrigin = "*"
-
 	// WebRTC server
 	conf.WebRTC = true
 	conf.WebRTCAddress = ":8889"
@@ -258,10 +200,6 @@ func (conf *Conf) setDefaults() {
 	conf.WebRTCIPsFromInterfacesList = []string{}
 	conf.WebRTCAdditionalHosts = []string{}
 	conf.WebRTCICEServers2 = []WebRTCICEServer{}
-
-	// SRT server
-	conf.SRT = true
-	conf.SRTAddress = ":8890"
 
 	conf.PathDefaults.setDefaults()
 }
@@ -386,18 +324,6 @@ func (conf *Conf) Validate() error {
 		}
 	}
 
-	// RTMP
-
-	if conf.RTMPDisable != nil {
-		conf.RTMP = !*conf.RTMPDisable
-	}
-
-	// HLS
-
-	if conf.HLSDisable != nil {
-		conf.HLS = !*conf.HLSDisable
-	}
-
 	// WebRTC
 
 	if conf.WebRTCDisable != nil {
@@ -445,26 +371,6 @@ func (conf *Conf) Validate() error {
 		if !conf.WebRTCIPsFromInterfaces && len(conf.WebRTCAdditionalHosts) == 0 {
 			return fmt.Errorf("at least one between 'webrtcIPsFromInterfaces' or 'webrtcAdditionalHosts' must be filled")
 		}
-	}
-
-	// Record (deprecated)
-	if conf.Record != nil {
-		conf.PathDefaults.Record = *conf.Record
-	}
-	if conf.RecordPath != nil {
-		conf.PathDefaults.RecordPath = *conf.RecordPath
-	}
-	if conf.RecordFormat != nil {
-		conf.PathDefaults.RecordFormat = *conf.RecordFormat
-	}
-	if conf.RecordPartDuration != nil {
-		conf.PathDefaults.RecordPartDuration = *conf.RecordPartDuration
-	}
-	if conf.RecordSegmentDuration != nil {
-		conf.PathDefaults.RecordSegmentDuration = *conf.RecordSegmentDuration
-	}
-	if conf.RecordDeleteAfter != nil {
-		conf.PathDefaults.RecordDeleteAfter = *conf.RecordDeleteAfter
 	}
 
 	hasAllOthers := false
