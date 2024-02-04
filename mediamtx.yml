@@ -239,27 +239,7 @@ pathDefaults:
   runOnInit:
   # Restart the command if it exits.
   runOnInitRestart: no
-
-  # Command to run when this path is requested by a reader
-  # and no one is publishing to this path yet.
-  # This can be used to publish a stream on demand.
-  # This is terminated with SIGINT when there are no readers anymore.
-  # The following environment variables are available:
-  # * MTX_PATH: path name
-  # * MTX_QUERY: query parameters (passed by first reader)
-  # * RTSP_PORT: RTSP server port
-  # * G1, G2, ...: regular expression groups, if path name is
-  #   a regular expression.
-  runOnDemand:
-  # Restart the command if it exits.
-  runOnDemandRestart: no
-  # Readers will be put on hold until the runOnDemand command starts publishing
-  # or until this amount of time has passed.
-  runOnDemandStartTimeout: 10s
-  # The command will be closed when there are no
-  # readers connected and this amount of time has passed.
-  runOnDemandCloseAfter: 10s
-
+  
 ###############################################
 # Path settings
 
