@@ -97,19 +97,18 @@ type Conf struct {
 	RunOnDisconnect     string          `json:"runOnDisconnect"`
 
 	// RTSP server
-	RTSP              bool       `json:"rtsp"`
-	RTSPDisable       *bool      `json:"rtspDisable,omitempty"` // deprecated
-	Protocols         Protocols  `json:"protocols"`
-	Encryption        Encryption `json:"encryption"`
-	RTSPAddress       string     `json:"rtspAddress"`
-	RTSPSAddress      string     `json:"rtspsAddress"`
-	RTPAddress        string     `json:"rtpAddress"`
-	RTCPAddress       string     `json:"rtcpAddress"`
-	MulticastIPRange  string     `json:"multicastIPRange"`
-	MulticastRTPPort  int        `json:"multicastRTPPort"`
-	MulticastRTCPPort int        `json:"multicastRTCPPort"`
-	ServerKey         string     `json:"serverKey"`
-	ServerCert        string     `json:"serverCert"`
+	RTSP              bool      `json:"rtsp"`
+	RTSPDisable       *bool     `json:"rtspDisable,omitempty"` // deprecated
+	Protocols         Protocols `json:"protocols"`
+	RTSPAddress       string    `json:"rtspAddress"`
+	RTSPSAddress      string    `json:"rtspsAddress"`
+	RTPAddress        string    `json:"rtpAddress"`
+	RTCPAddress       string    `json:"rtcpAddress"`
+	MulticastIPRange  string    `json:"multicastIPRange"`
+	MulticastRTPPort  int       `json:"multicastRTPPort"`
+	MulticastRTCPPort int       `json:"multicastRTCPPort"`
+	ServerKey         string    `json:"serverKey"`
+	ServerCert        string    `json:"serverCert"`
 
 	// WebRTC server
 	WebRTC                      bool              `json:"webrtc"`
@@ -281,14 +280,6 @@ func (conf *Conf) Validate() error {
 
 	if conf.RTSPDisable != nil {
 		conf.RTSP = !*conf.RTSPDisable
-	}
-	if conf.Encryption == EncryptionStrict {
-		if _, ok := conf.Protocols[Protocol(gortsplib.TransportUDP)]; ok {
-			return fmt.Errorf("strict encryption can't be used with the UDP transport protocol")
-		}
-		if _, ok := conf.Protocols[Protocol(gortsplib.TransportUDPMulticast)]; ok {
-			return fmt.Errorf("strict encryption can't be used with the UDP-multicast transport protocol")
-		}
 	}
 
 	// WebRTC

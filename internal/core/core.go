@@ -240,8 +240,6 @@ func (p *Core) createResources(initial bool) error {
 	}
 
 	if p.conf.RTSP &&
-		(p.conf.Encryption == conf.EncryptionNo ||
-			p.conf.Encryption == conf.EncryptionOptional) &&
 		p.rtspServer == nil {
 		_, useUDP := p.conf.Protocols[conf.Protocol(gortsplib.TransportUDP)]
 		_, useMulticast := p.conf.Protocols[conf.Protocol(gortsplib.TransportUDPMulticast)]
@@ -275,42 +273,6 @@ func (p *Core) createResources(initial bool) error {
 			return err
 		}
 		p.rtspServer = i
-
-	}
-
-	if p.conf.RTSP &&
-		(p.conf.Encryption == conf.EncryptionStrict ||
-			p.conf.Encryption == conf.EncryptionOptional) &&
-		p.rtspsServer == nil {
-		i := &rtsp.Server{
-			Address:             p.conf.RTSPSAddress,
-			ReadTimeout:         p.conf.ReadTimeout,
-			WriteTimeout:        p.conf.WriteTimeout,
-			WriteQueueSize:      p.conf.WriteQueueSize,
-			UseUDP:              false,
-			UseMulticast:        false,
-			RTPAddress:          "",
-			RTCPAddress:         "",
-			MulticastIPRange:    "",
-			MulticastRTPPort:    0,
-			MulticastRTCPPort:   0,
-			IsTLS:               true,
-			ServerCert:          p.conf.ServerCert,
-			ServerKey:           p.conf.ServerKey,
-			RTSPAddress:         p.conf.RTSPAddress,
-			Protocols:           p.conf.Protocols,
-			RunOnConnect:        p.conf.RunOnConnect,
-			RunOnConnectRestart: p.conf.RunOnConnectRestart,
-			RunOnDisconnect:     p.conf.RunOnDisconnect,
-			ExternalCmdPool:     p.externalCmdPool,
-			PathManager:         p.pathManager,
-			Parent:              p,
-		}
-		err := i.Initialize()
-		if err != nil {
-			return err
-		}
-		p.rtspsServer = i
 
 	}
 
@@ -370,7 +332,6 @@ func (p *Core) closeResources(newConf *conf.Conf, calledByAPI bool) {
 
 	closeRTSPServer := newConf == nil ||
 		newConf.RTSP != p.conf.RTSP ||
-		newConf.Encryption != p.conf.Encryption ||
 		newConf.RTSPAddress != p.conf.RTSPAddress ||
 		newConf.ReadTimeout != p.conf.ReadTimeout ||
 		newConf.WriteTimeout != p.conf.WriteTimeout ||
@@ -391,7 +352,6 @@ func (p *Core) closeResources(newConf *conf.Conf, calledByAPI bool) {
 
 	closeRTSPSServer := newConf == nil ||
 		newConf.RTSP != p.conf.RTSP ||
-		newConf.Encryption != p.conf.Encryption ||
 		newConf.RTSPSAddress != p.conf.RTSPSAddress ||
 		newConf.ReadTimeout != p.conf.ReadTimeout ||
 		newConf.WriteTimeout != p.conf.WriteTimeout ||

@@ -3,7 +3,6 @@ package conf
 import (
 	"encoding/json"
 	"fmt"
-	"net"
 	gourl "net/url"
 	"reflect"
 	"regexp"
@@ -105,12 +104,8 @@ type Path struct {
 	RecordDeleteAfter     StringDuration `json:"recordDeleteAfter"`
 
 	// Authentication
-	PublishUser Credential `json:"publishUser"`
-	PublishPass Credential `json:"publishPass"`
-	PublishIPs  IPsOrCIDRs `json:"publishIPs"`
-	ReadUser    Credential `json:"readUser"`
-	ReadPass    Credential `json:"readPass"`
-	ReadIPs     IPsOrCIDRs `json:"readIPs"`
+	PublishIPs IPsOrCIDRs `json:"publishIPs"`
+	ReadIPs    IPsOrCIDRs `json:"readIPs"`
 
 	// Publisher source
 	OverridePublisher        bool   `json:"overridePublisher"`
@@ -303,38 +298,6 @@ func (pconf *Path) validate(conf *Conf, name string) error {
 			}
 		}
 
-	case strings.HasPrefix(pconf.Source, "http://") ||
-		strings.HasPrefix(pconf.Source, "https://"):
-		u, err := gourl.Parse(pconf.Source)
-		if err != nil {
-			return fmt.Errorf("'%s' is not a valid URL", pconf.Source)
-		}
-		if u.Scheme != "http" && u.Scheme != "https" {
-			return fmt.Errorf("'%s' is not a valid URL", pconf.Source)
-		}
-
-		if u.User != nil {
-			pass, _ := u.User.Password()
-			user := u.User.Username()
-			if user != "" && pass == "" ||
-				user == "" && pass != "" {
-				return fmt.Errorf("username and password must be both provided")
-			}
-		}
-
-	case strings.HasPrefix(pconf.Source, "udp://"):
-		_, _, err := net.SplitHostPort(pconf.Source[len("udp://"):])
-		if err != nil {
-			return fmt.Errorf("'%s' is not a valid UDP URL", pconf.Source)
-		}
-
-	case strings.HasPrefix(pconf.Source, "srt://"):
-
-		_, err := gourl.Parse(pconf.Source)
-		if err != nil {
-			return fmt.Errorf("'%s' is not a valid URL", pconf.Source)
-		}
-
 	case strings.HasPrefix(pconf.Source, "whep://") ||
 		strings.HasPrefix(pconf.Source, "wheps://"):
 		_, err := gourl.Parse(pconf.Source)
@@ -372,25 +335,6 @@ func (pconf *Path) validate(conf *Conf, name string) error {
 				return fmt.Errorf("'%s' is not a valid RTSP URL", pconf.Fallback)
 			}
 		}
-	}
-
-	// Authentication
-
-	if (!pconf.PublishUser.IsEmpty() && pconf.PublishPass.IsEmpty()) ||
-		(pconf.PublishUser.IsEmpty() && !pconf.PublishPass.IsEmpty()) {
-		return fmt.Errorf("read username and password must be both filled")
-	}
-	if !pconf.PublishUser.IsEmpty() && pconf.Source != "publisher" {
-		return fmt.Errorf("'publishUser' is useless when source is not 'publisher', since " +
-			"the stream is not provided by a publisher, but by a fixed source")
-	}
-	if len(pconf.PublishIPs) > 0 && pconf.Source != "publisher" {
-		return fmt.Errorf("'publishIPs' is useless when source is not 'publisher', since " +
-			"the stream is not provided by a publisher, but by a fixed source")
-	}
-	if (!pconf.ReadUser.IsEmpty() && pconf.ReadPass.IsEmpty()) ||
-		(pconf.ReadUser.IsEmpty() && !pconf.ReadPass.IsEmpty()) {
-		return fmt.Errorf("read username and password must be both filled")
 	}
 
 	// Publisher source
@@ -501,17 +445,7 @@ func (pconf *Path) Equal(other *Path) bool {
 
 // HasStaticSource checks whether the path has a static source.
 func (pconf Path) HasStaticSource() bool {
-	return strings.HasPrefix(pconf.Source, "rtsp://") ||
-		strings.HasPrefix(pconf.Source, "rtsps://") ||
-		strings.HasPrefix(pconf.Source, "rtmp://") ||
-		strings.HasPrefix(pconf.Source, "rtmps://") ||
-		strings.HasPrefix(pconf.Source, "http://") ||
-		strings.HasPrefix(pconf.Source, "https://") ||
-		strings.HasPrefix(pconf.Source, "udp://") ||
-		strings.HasPrefix(pconf.Source, "srt://") ||
-		strings.HasPrefix(pconf.Source, "whep://") ||
-		strings.HasPrefix(pconf.Source, "wheps://") ||
-		pconf.Source == "rpiCamera"
+	return strings.HasPrefix(pconf.Source, "rtsp://")
 }
 
 // HasOnDemandStaticSource checks whether the path has a on demand static source.

@@ -49,9 +49,7 @@ rtsp: yes
 # TCP is the most versatile, and does support encryption.
 # The handshake is always performed with TCP.
 protocols: [udp, multicast, tcp]
-# Encrypt handshakes and TCP streams with TLS (RTSPS).
-# Available values are "no", "strict", "optional".
-encryption: "no"
+
 # Address of the TCP/RTSP listener. This is needed only when encryption is "no" or "optional".
 rtspAddress: :8554
 # Address of the TCP/TLS/RTSPS listener. This is needed only when encryption is "strict" or "optional".
@@ -193,27 +191,6 @@ pathDefaults:
   # Delete segments after this timespan.
   # Set to 0s to disable automatic deletion.
   recordDeleteAfter: 24h
-
-  ###############################################
-  # Default path settings -> Authentication
-
-  # Username required to publish.
-  # Hashed values can be inserted with the "argon2:" or "sha256:" prefix.
-  publishUser:
-  # Password required to publish.
-  # Hashed values can be inserted with the "argon2:" or "sha256:" prefix.
-  publishPass:
-  # IPs or networks (x.x.x.x/24) allowed to publish.
-  publishIPs: []
-
-  # Username required to read.
-  # Hashed values can be inserted with the "argon2:" or "sha256:" prefix.
-  readUser:
-  # password required to read.
-  # Hashed values can be inserted with the "argon2:" or "sha256:" prefix.
-  readPass:
-  # IPs or networks (x.x.x.x/24) allowed to read.
-  readIPs: []
 
   ###############################################
   # Default path settings -> Publisher source (when source is "publisher")
