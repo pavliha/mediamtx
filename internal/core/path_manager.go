@@ -21,7 +21,6 @@ type pathManagerParent interface {
 
 type pathManager struct {
 	logLevel          conf.LogLevel
-	rtspAddress       string
 	readTimeout       conf.StringDuration
 	writeTimeout      conf.StringDuration
 	writeQueueSize    int
@@ -182,16 +181,6 @@ func (pm *pathManager) doAddReader(req defs.PathAddReaderReq) {
 }
 
 func (pm *pathManager) doAddPublisher(req defs.PathAddPublisherReq) {
-	pathConfName, pathConf, pathMatches, err := conf.FindPathConf(pm.pathConfs, req.AccessRequest.Name)
-	if err != nil {
-		req.Res <- defs.PathAddPublisherRes{Err: err}
-		return
-	}
-
-	// create path if it doesn't exist
-	if _, ok := pm.paths[req.AccessRequest.Name]; !ok {
-		pm.createPath(pathConfName, pathConf, req.AccessRequest.Name, pathMatches)
-	}
 
 	req.Res <- defs.PathAddPublisherRes{Path: pm.paths[req.AccessRequest.Name]}
 }
@@ -205,7 +194,6 @@ func (pm *pathManager) createPath(
 	pa := &path{
 		parentCtx:         pm.ctx,
 		logLevel:          pm.logLevel,
-		rtspAddress:       pm.rtspAddress,
 		readTimeout:       pm.readTimeout,
 		writeTimeout:      pm.writeTimeout,
 		writeQueueSize:    pm.writeQueueSize,

@@ -42,7 +42,6 @@ const (
 type path struct {
 	parentCtx         context.Context
 	logLevel          conf.LogLevel
-	rtspAddress       string
 	readTimeout       conf.StringDuration
 	writeTimeout      conf.StringDuration
 	writeQueueSize    int

@@ -36,12 +36,11 @@ var videoCodecs = []webrtc.RTPCodecParameters{
 
 // APIConf is the configuration passed to NewAPI().
 type APIConf struct {
-	ICEUDPMux             ice.UDPMux
-	ICETCPMux             ice.TCPMux
-	LocalRandomUDP        bool
-	IPsFromInterfaces     bool
-	IPsFromInterfacesList []string
-	AdditionalHosts       []string
+	ICEUDPMux         ice.UDPMux
+	ICETCPMux         ice.TCPMux
+	LocalRandomUDP    bool
+	IPsFromInterfaces bool
+	AdditionalHosts   []string
 }
 
 // NewAPI allocates a webrtc API.
@@ -49,8 +48,7 @@ func NewAPI(cnf APIConf) (*webrtc.API, error) {
 	settingsEngine := webrtc.SettingEngine{}
 
 	settingsEngine.SetInterfaceFilter(func(iface string) bool {
-		return cnf.IPsFromInterfaces && (len(cnf.IPsFromInterfacesList) == 0 ||
-			stringInSlice(iface, cnf.IPsFromInterfacesList))
+		return true
 	})
 
 	settingsEngine.SetAdditionalHosts(cnf.AdditionalHosts)

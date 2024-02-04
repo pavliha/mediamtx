@@ -199,7 +199,7 @@ func (s *Server) Initialize() error {
 	s.done = make(chan struct{})
 
 	s.httpServer = &httpServer{
-		address:     s.Address,
+		address:     ":8889",
 		allowOrigin: s.AllowOrigin,
 		readTimeout: s.ReadTimeout,
 		pathManager: s.PathManager,
@@ -212,10 +212,7 @@ func (s *Server) Initialize() error {
 	}
 
 	apiConf := webrtc.APIConf{
-		LocalRandomUDP:        false,
-		IPsFromInterfaces:     s.IPsFromInterfaces,
-		IPsFromInterfacesList: s.IPsFromInterfacesList,
-		AdditionalHosts:       s.AdditionalHosts,
+		AdditionalHosts: s.AdditionalHosts,
 	}
 
 	if s.LocalUDPAddress != "" {
