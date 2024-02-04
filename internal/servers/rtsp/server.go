@@ -13,7 +13,6 @@ import (
 
 	"github.com/bluenviron/gortsplib/v4"
 	"github.com/bluenviron/gortsplib/v4/pkg/base"
-	"github.com/bluenviron/gortsplib/v4/pkg/headers"
 	"github.com/bluenviron/gortsplib/v4/pkg/liberrors"
 	"github.com/google/uuid"
 
@@ -52,7 +51,6 @@ type serverParent interface {
 // Server is a RTSP server.
 type Server struct {
 	Address             string
-	AuthMethods         []headers.AuthMethod
 	ReadTimeout         conf.StringDuration
 	WriteTimeout        conf.StringDuration
 	WriteQueueSize      int
@@ -178,7 +176,6 @@ func (s *Server) OnConnOpen(ctx *gortsplib.ServerHandlerOnConnOpenCtx) {
 	c := &conn{
 		isTLS:               s.IsTLS,
 		rtspAddress:         s.RTSPAddress,
-		authMethods:         s.AuthMethods,
 		readTimeout:         s.ReadTimeout,
 		runOnConnect:        s.RunOnConnect,
 		runOnConnectRestart: s.RunOnConnectRestart,

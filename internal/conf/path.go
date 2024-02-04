@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/bluenviron/gortsplib/v4/pkg/base"
-	"github.com/bluenviron/gortsplib/v4/pkg/headers"
 )
 
 var rePathName = regexp.MustCompile(`^[0-9a-zA-Z_\-/\.~]+$`)
@@ -392,22 +391,6 @@ func (pconf *Path) validate(conf *Conf, name string) error {
 	if (!pconf.ReadUser.IsEmpty() && pconf.ReadPass.IsEmpty()) ||
 		(pconf.ReadUser.IsEmpty() && !pconf.ReadPass.IsEmpty()) {
 		return fmt.Errorf("read username and password must be both filled")
-	}
-	if contains(conf.AuthMethods, headers.AuthDigest) {
-		if pconf.PublishUser.IsHashed() ||
-			pconf.PublishPass.IsHashed() ||
-			pconf.ReadUser.IsHashed() ||
-			pconf.ReadPass.IsHashed() {
-			return fmt.Errorf("hashed credentials can't be used when the digest auth method is available")
-		}
-	}
-	if conf.ExternalAuthenticationURL != "" {
-		if !pconf.PublishUser.IsEmpty() ||
-			len(pconf.PublishIPs) > 0 ||
-			!pconf.ReadUser.IsEmpty() ||
-			len(pconf.ReadIPs) > 0 {
-			return fmt.Errorf("credentials or IPs can't be used together with 'externalAuthenticationURL'")
-		}
 	}
 
 	// Publisher source

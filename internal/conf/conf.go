@@ -84,46 +84,32 @@ func copyStructFields(dest interface{}, source interface{}) {
 // Conf is a configuration.
 type Conf struct {
 	// General
-	LogLevel                  LogLevel        `json:"logLevel"`
-	LogDestinations           LogDestinations `json:"logDestinations"`
-	LogFile                   string          `json:"logFile"`
-	ReadTimeout               StringDuration  `json:"readTimeout"`
-	WriteTimeout              StringDuration  `json:"writeTimeout"`
-	ReadBufferCount           *int            `json:"readBufferCount,omitempty"` // deprecated
-	WriteQueueSize            int             `json:"writeQueueSize"`
-	UDPMaxPayloadSize         int             `json:"udpMaxPayloadSize"`
-	ExternalAuthenticationURL string          `json:"externalAuthenticationURL"`
-	Metrics                   bool            `json:"metrics"`
-	MetricsAddress            string          `json:"metricsAddress"`
-	PPROF                     bool            `json:"pprof"`
-	PPROFAddress              string          `json:"pprofAddress"`
-	RunOnConnect              string          `json:"runOnConnect"`
-	RunOnConnectRestart       bool            `json:"runOnConnectRestart"`
-	RunOnDisconnect           string          `json:"runOnDisconnect"`
-
-	// API
-	API        bool   `json:"api"`
-	APIAddress string `json:"apiAddress"`
-
-	// Playback
-	Playback        bool   `json:"playback"`
-	PlaybackAddress string `json:"playbackAddress"`
+	LogLevel            LogLevel        `json:"logLevel"`
+	LogDestinations     LogDestinations `json:"logDestinations"`
+	LogFile             string          `json:"logFile"`
+	ReadTimeout         StringDuration  `json:"readTimeout"`
+	WriteTimeout        StringDuration  `json:"writeTimeout"`
+	ReadBufferCount     *int            `json:"readBufferCount,omitempty"` // deprecated
+	WriteQueueSize      int             `json:"writeQueueSize"`
+	UDPMaxPayloadSize   int             `json:"udpMaxPayloadSize"`
+	RunOnConnect        string          `json:"runOnConnect"`
+	RunOnConnectRestart bool            `json:"runOnConnectRestart"`
+	RunOnDisconnect     string          `json:"runOnDisconnect"`
 
 	// RTSP server
-	RTSP              bool        `json:"rtsp"`
-	RTSPDisable       *bool       `json:"rtspDisable,omitempty"` // deprecated
-	Protocols         Protocols   `json:"protocols"`
-	Encryption        Encryption  `json:"encryption"`
-	RTSPAddress       string      `json:"rtspAddress"`
-	RTSPSAddress      string      `json:"rtspsAddress"`
-	RTPAddress        string      `json:"rtpAddress"`
-	RTCPAddress       string      `json:"rtcpAddress"`
-	MulticastIPRange  string      `json:"multicastIPRange"`
-	MulticastRTPPort  int         `json:"multicastRTPPort"`
-	MulticastRTCPPort int         `json:"multicastRTCPPort"`
-	ServerKey         string      `json:"serverKey"`
-	ServerCert        string      `json:"serverCert"`
-	AuthMethods       AuthMethods `json:"authMethods"`
+	RTSP              bool       `json:"rtsp"`
+	RTSPDisable       *bool      `json:"rtspDisable,omitempty"` // deprecated
+	Protocols         Protocols  `json:"protocols"`
+	Encryption        Encryption `json:"encryption"`
+	RTSPAddress       string     `json:"rtspAddress"`
+	RTSPSAddress      string     `json:"rtspsAddress"`
+	RTPAddress        string     `json:"rtpAddress"`
+	RTCPAddress       string     `json:"rtcpAddress"`
+	MulticastIPRange  string     `json:"multicastIPRange"`
+	MulticastRTPPort  int        `json:"multicastRTPPort"`
+	MulticastRTCPPort int        `json:"multicastRTCPPort"`
+	ServerKey         string     `json:"serverKey"`
+	ServerCert        string     `json:"serverCert"`
 
 	// WebRTC server
 	WebRTC                      bool              `json:"webrtc"`
@@ -162,14 +148,6 @@ func (conf *Conf) setDefaults() {
 	conf.WriteTimeout = 10 * StringDuration(time.Second)
 	conf.WriteQueueSize = 512
 	conf.UDPMaxPayloadSize = 1472
-	conf.MetricsAddress = "127.0.0.1:9998"
-	conf.PPROFAddress = "127.0.0.1:9999"
-
-	// API
-	conf.APIAddress = "127.0.0.1:9997"
-
-	// Playback server
-	conf.PlaybackAddress = ":9996"
 
 	// RTSP server
 	conf.RTSP = true
@@ -187,7 +165,6 @@ func (conf *Conf) setDefaults() {
 	conf.MulticastRTCPPort = 8003
 	conf.ServerKey = "server.key"
 	conf.ServerCert = "server.crt"
-	conf.AuthMethods = AuthMethods{headers.AuthBasic}
 
 	// WebRTC server
 	conf.WebRTC = true
@@ -298,16 +275,6 @@ func (conf *Conf) Validate() error {
 	}
 	if conf.UDPMaxPayloadSize > 1472 {
 		return fmt.Errorf("'udpMaxPayloadSize' must be less than 1472")
-	}
-	if conf.ExternalAuthenticationURL != "" {
-		if !strings.HasPrefix(conf.ExternalAuthenticationURL, "http://") &&
-			!strings.HasPrefix(conf.ExternalAuthenticationURL, "https://") {
-			return fmt.Errorf("'externalAuthenticationURL' must be a HTTP URL")
-		}
-
-		if contains(conf.AuthMethods, headers.AuthDigest) {
-			return fmt.Errorf("'externalAuthenticationURL' can't be used when 'digest' is in authMethods")
-		}
 	}
 
 	// RTSP

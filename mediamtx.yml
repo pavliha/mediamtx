@@ -24,33 +24,6 @@ writeQueueSize: 512
 # This can be decreased to avoid fragmentation on networks with a low UDP MTU.
 udpMaxPayloadSize: 1472
 
-# HTTP URL to perform external authentication.
-# Every time a user wants to authenticate, the server calls this URL
-# with the POST method and a body containing:
-# {
-#   "ip": "ip",
-#   "user": "user",
-#   "password": "password",
-#   "path": "path",
-#   "protocol": "rtsp|rtmp|hls|webrtc",
-#   "id": "id",
-#   "action": "read|publish",
-#   "query": "query"
-# }
-# If the response code is 20x, authentication is accepted, otherwise
-# it is discarded.
-externalAuthenticationURL:
-
-# Enable Prometheus-compatible metrics.
-metrics: no
-# Address of the metrics listener.
-metricsAddress: 127.0.0.1:9998
-
-# Enable pprof-compatible endpoint to monitor performances.
-pprof: no
-# Address of the pprof listener.
-pprofAddress: 127.0.0.1:9999
-
 # Command to run when a client connects to the server.
 # This is terminated with SIGINT when a client disconnects from the server.
 # The following environment variables are available:
@@ -63,22 +36,6 @@ runOnConnectRestart: no
 # Command to run when a client disconnects from the server.
 # Environment variables are the same of runOnConnect.
 runOnDisconnect:
-
-###############################################
-# Global settings -> API
-
-# Enable controlling the server through the API.
-api: no
-# Address of the API listener.
-apiAddress: 127.0.0.1:9997
-
-###############################################
-# Global settings -> Playback server
-
-# Enable downloading recordings from the playback server.
-playback: no
-# Address of the playback server listener.
-playbackAddress: :9996
 
 ###############################################
 # Global settings -> RTSP server
@@ -116,9 +73,6 @@ multicastRTCPPort: 8003
 serverKey: server.key
 # Path to the server certificate. This is needed only when encryption is "strict" or "optional".
 serverCert: server.crt
-# Authentication methods. Available are "basic" and "digest".
-# "digest" doesn't provide any additional security and is available for compatibility reasons only.
-authMethods: [basic]
 
 ###############################################
 # Global settings -> WebRTC server

@@ -49,7 +49,6 @@ type pathManager struct {
 	logLevel                  conf.LogLevel
 	externalAuthenticationURL string
 	rtspAddress               string
-	authMethods               conf.AuthMethods
 	readTimeout               conf.StringDuration
 	writeTimeout              conf.StringDuration
 	writeQueueSize            int
@@ -235,25 +234,11 @@ func (pm *pathManager) doFindPathConf(req defs.PathFindPathConfReq) {
 		return
 	}
 
-	err = doAuthentication(pm.externalAuthenticationURL, pm.authMethods,
-		pathConf, req.AccessRequest)
-	if err != nil {
-		req.Res <- defs.PathFindPathConfRes{Err: err}
-		return
-	}
-
 	req.Res <- defs.PathFindPathConfRes{Conf: pathConf}
 }
 
 func (pm *pathManager) doDescribe(req defs.PathDescribeReq) {
 	pathConfName, pathConf, pathMatches, err := conf.FindPathConf(pm.pathConfs, req.AccessRequest.Name)
-	if err != nil {
-		req.Res <- defs.PathDescribeRes{Err: err}
-		return
-	}
-
-	err = doAuthentication(pm.externalAuthenticationURL, pm.authMethods,
-		pathConf, req.AccessRequest)
 	if err != nil {
 		req.Res <- defs.PathDescribeRes{Err: err}
 		return
@@ -274,15 +259,6 @@ func (pm *pathManager) doAddReader(req defs.PathAddReaderReq) {
 		return
 	}
 
-	if !req.AccessRequest.SkipAuth {
-		err = doAuthentication(pm.externalAuthenticationURL, pm.authMethods,
-			pathConf, req.AccessRequest)
-		if err != nil {
-			req.Res <- defs.PathAddReaderRes{Err: err}
-			return
-		}
-	}
-
 	// create path if it doesn't exist
 	if _, ok := pm.paths[req.AccessRequest.Name]; !ok {
 		pm.createPath(pathConfName, pathConf, req.AccessRequest.Name, pathMatches)
@@ -296,15 +272,6 @@ func (pm *pathManager) doAddPublisher(req defs.PathAddPublisherReq) {
 	if err != nil {
 		req.Res <- defs.PathAddPublisherRes{Err: err}
 		return
-	}
-
-	if !req.AccessRequest.SkipAuth {
-		err = doAuthentication(pm.externalAuthenticationURL, pm.authMethods,
-			pathConf, req.AccessRequest)
-		if err != nil {
-			req.Res <- defs.PathAddPublisherRes{Err: err}
-			return
-		}
 	}
 
 	// create path if it doesn't exist
