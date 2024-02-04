@@ -3,7 +3,6 @@ package rtsp
 
 import (
 	"context"
-	"crypto/tls"
 	"errors"
 	"fmt"
 	"strings"
@@ -11,7 +10,6 @@ import (
 	"time"
 
 	"github.com/bluenviron/gortsplib/v4"
-	"github.com/bluenviron/gortsplib/v4/pkg/base"
 
 	"github.com/bluenviron/mediamtx/internal/conf"
 	"github.com/bluenviron/mediamtx/internal/defs"
@@ -46,33 +44,26 @@ type serverParent interface {
 
 // Server is a RTSP server.
 type Server struct {
-	Address             string
-	ReadTimeout         conf.StringDuration
-	WriteTimeout        conf.StringDuration
-	WriteQueueSize      int
-	UseUDP              bool
-	UseMulticast        bool
-	RTPAddress          string
-	RTCPAddress         string
-	MulticastIPRange    string
-	MulticastRTPPort    int
-	MulticastRTCPPort   int
-	IsTLS               bool
-	ServerCert          string
-	ServerKey           string
-	RTSPAddress         string
-	Protocols           map[conf.Protocol]struct{}
-	RunOnConnect        string
-	RunOnConnectRestart bool
-	RunOnDisconnect     string
-	PathManager         defs.PathManager
-	Parent              serverParent
+	Address           string
+	ReadTimeout       conf.StringDuration
+	WriteTimeout      conf.StringDuration
+	WriteQueueSize    int
+	UseUDP            bool
+	UseMulticast      bool
+	RTPAddress        string
+	RTCPAddress       string
+	MulticastIPRange  string
+	MulticastRTPPort  int
+	MulticastRTCPPort int
+	RTSPAddress       string
+	Protocols         map[conf.Protocol]struct{}
+	PathManager       defs.PathManager
+	Parent            serverParent
 
 	ctx       context.Context
 	ctxCancel func()
 	wg        sync.WaitGroup
 	srv       *gortsplib.Server
-	mutex     sync.RWMutex
 	conns     map[*gortsplib.ServerConn]*conn
 	sessions  map[*gortsplib.ServerSession]*session
 }
@@ -103,15 +94,6 @@ func (s *Server) Initialize() error {
 		s.srv.MulticastRTCPPort = s.MulticastRTCPPort
 	}
 
-	if s.IsTLS {
-		cert, err := tls.LoadX509KeyPair(s.ServerCert, s.ServerKey)
-		if err != nil {
-			return err
-		}
-
-		s.srv.TLSConfig = &tls.Config{Certificates: []tls.Certificate{cert}}
-	}
-
 	err := s.srv.Start()
 	if err != nil {
 		return err
@@ -127,13 +109,7 @@ func (s *Server) Initialize() error {
 
 // Log implements logger.Writer.
 func (s *Server) Log(level logger.Level, format string, args ...interface{}) {
-	label := func() string {
-		if s.IsTLS {
-			return "RTSPS"
-		}
-		return "RTSP"
-	}()
-	s.Parent.Log(level, "[%s] "+format, append([]interface{}{label}, args...)...)
+	s.Parent.Log(level, "[%s] "+format, append([]interface{}{"RTSP"}, args...)...)
 }
 
 // Close closes the server.
@@ -164,76 +140,4 @@ outer:
 	}
 
 	s.ctxCancel()
-}
-
-// OnConnOpen implements gortsplib.ServerHandlerOnConnOpen.
-func (s *Server) OnConnOpen(ctx *gortsplib.ServerHandlerOnConnOpenCtx) {
-	c := &conn{
-		rtspAddress:         s.RTSPAddress,
-		readTimeout:         s.ReadTimeout,
-		runOnConnect:        s.RunOnConnect,
-		runOnConnectRestart: s.RunOnConnectRestart,
-		runOnDisconnect:     s.RunOnDisconnect,
-		pathManager:         s.PathManager,
-		rconn:               ctx.Conn,
-		rserver:             s.srv,
-		parent:              s,
-	}
-	c.initialize()
-	s.mutex.Lock()
-	s.conns[ctx.Conn] = c
-	s.mutex.Unlock()
-
-	ctx.Conn.SetUserData(c)
-}
-
-// OnConnClose implements gortsplib.ServerHandlerOnConnClose.
-func (s *Server) OnConnClose(ctx *gortsplib.ServerHandlerOnConnCloseCtx) {
-	s.mutex.Lock()
-	c := s.conns[ctx.Conn]
-	delete(s.conns, ctx.Conn)
-	s.mutex.Unlock()
-	c.onClose(ctx.Error)
-}
-
-// OnRequest implements gortsplib.ServerHandlerOnRequest.
-func (s *Server) OnRequest(sc *gortsplib.ServerConn, req *base.Request) {
-	c := sc.UserData().(*conn)
-	c.onRequest(req)
-}
-
-// OnResponse implements gortsplib.ServerHandlerOnResponse.
-func (s *Server) OnResponse(sc *gortsplib.ServerConn, res *base.Response) {
-	c := sc.UserData().(*conn)
-	c.OnResponse(res)
-}
-
-// OnSessionOpen implements gortsplib.ServerHandlerOnSessionOpen.
-func (s *Server) OnSessionOpen(ctx *gortsplib.ServerHandlerOnSessionOpenCtx) {
-	se := &session{
-		isTLS:       s.IsTLS,
-		protocols:   s.Protocols,
-		rsession:    ctx.Session,
-		rconn:       ctx.Conn,
-		rserver:     s.srv,
-		pathManager: s.PathManager,
-		parent:      s,
-	}
-	se.initialize()
-	s.mutex.Lock()
-	s.sessions[ctx.Session] = se
-	s.mutex.Unlock()
-	ctx.Session.SetUserData(se)
-}
-
-// OnSessionClose implements gortsplib.ServerHandlerOnSessionClose.
-func (s *Server) OnSessionClose(ctx *gortsplib.ServerHandlerOnSessionCloseCtx) {
-	s.mutex.Lock()
-	se := s.sessions[ctx.Session]
-	delete(s.sessions, ctx.Session)
-	s.mutex.Unlock()
-
-	if se != nil {
-		se.onClose(ctx.Error)
-	}
 }

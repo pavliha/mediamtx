@@ -81,17 +81,14 @@ func copyStructFields(dest interface{}, source interface{}) {
 // Conf is a configuration.
 type Conf struct {
 	// General
-	LogLevel            LogLevel        `json:"logLevel"`
-	LogDestinations     LogDestinations `json:"logDestinations"`
-	LogFile             string          `json:"logFile"`
-	ReadTimeout         StringDuration  `json:"readTimeout"`
-	WriteTimeout        StringDuration  `json:"writeTimeout"`
-	ReadBufferCount     *int            `json:"readBufferCount,omitempty"` // deprecated
-	WriteQueueSize      int             `json:"writeQueueSize"`
-	UDPMaxPayloadSize   int             `json:"udpMaxPayloadSize"`
-	RunOnConnect        string          `json:"runOnConnect"`
-	RunOnConnectRestart bool            `json:"runOnConnectRestart"`
-	RunOnDisconnect     string          `json:"runOnDisconnect"`
+	LogLevel          LogLevel        `json:"logLevel"`
+	LogDestinations   LogDestinations `json:"logDestinations"`
+	LogFile           string          `json:"logFile"`
+	ReadTimeout       StringDuration  `json:"readTimeout"`
+	WriteTimeout      StringDuration  `json:"writeTimeout"`
+	ReadBufferCount   *int            `json:"readBufferCount,omitempty"` // deprecated
+	WriteQueueSize    int             `json:"writeQueueSize"`
+	UDPMaxPayloadSize int             `json:"udpMaxPayloadSize"`
 
 	// RTSP server
 	RTSP              bool      `json:"rtsp"`
@@ -333,70 +330,5 @@ func (conf *Conf) Validate() error {
 		}
 	}
 
-	return nil
-}
-
-// Global returns the global part of Conf.
-func (conf *Conf) Global() *Global {
-	g := &Global{
-		Values: newGlobalValues(),
-	}
-	copyStructFields(g.Values, conf)
-	return g
-}
-
-// PatchGlobal patches the global configuration.
-func (conf *Conf) PatchGlobal(optional *OptionalGlobal) {
-	copyStructFields(conf, optional.Values)
-}
-
-// PatchPathDefaults patches path default settings.
-func (conf *Conf) PatchPathDefaults(optional *OptionalPath) {
-	copyStructFields(&conf.PathDefaults, optional.Values)
-}
-
-// AddPath adds a path.
-func (conf *Conf) AddPath(name string, p *OptionalPath) error {
-	if _, ok := conf.OptionalPaths[name]; ok {
-		return fmt.Errorf("path already exists")
-	}
-
-	if conf.OptionalPaths == nil {
-		conf.OptionalPaths = make(map[string]*OptionalPath)
-	}
-
-	conf.OptionalPaths[name] = p
-	return nil
-}
-
-// PatchPath patches a path.
-func (conf *Conf) PatchPath(name string, optional2 *OptionalPath) error {
-	optional, ok := conf.OptionalPaths[name]
-	if !ok {
-		return ErrPathNotFound
-	}
-
-	copyStructFields(optional.Values, optional2.Values)
-	return nil
-}
-
-// ReplacePath replaces a path.
-func (conf *Conf) ReplacePath(name string, optional2 *OptionalPath) error {
-	_, ok := conf.OptionalPaths[name]
-	if !ok {
-		return ErrPathNotFound
-	}
-
-	conf.OptionalPaths[name] = optional2
-	return nil
-}
-
-// RemovePath removes a path.
-func (conf *Conf) RemovePath(name string) error {
-	if _, ok := conf.OptionalPaths[name]; !ok {
-		return ErrPathNotFound
-	}
-
-	delete(conf.OptionalPaths, name)
 	return nil
 }

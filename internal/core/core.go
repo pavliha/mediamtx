@@ -199,27 +199,21 @@ func (p *Core) createResources(initial bool) error {
 		_, useMulticast := p.conf.Protocols[conf.Protocol(gortsplib.TransportUDPMulticast)]
 
 		i := &rtsp.Server{
-			Address:             p.conf.RTSPAddress,
-			ReadTimeout:         p.conf.ReadTimeout,
-			WriteTimeout:        p.conf.WriteTimeout,
-			WriteQueueSize:      p.conf.WriteQueueSize,
-			UseUDP:              useUDP,
-			UseMulticast:        useMulticast,
-			RTPAddress:          p.conf.RTPAddress,
-			RTCPAddress:         p.conf.RTCPAddress,
-			MulticastIPRange:    p.conf.MulticastIPRange,
-			MulticastRTPPort:    p.conf.MulticastRTPPort,
-			MulticastRTCPPort:   p.conf.MulticastRTCPPort,
-			IsTLS:               false,
-			ServerCert:          "",
-			ServerKey:           "",
-			RTSPAddress:         p.conf.RTSPAddress,
-			Protocols:           p.conf.Protocols,
-			RunOnConnect:        p.conf.RunOnConnect,
-			RunOnConnectRestart: p.conf.RunOnConnectRestart,
-			RunOnDisconnect:     p.conf.RunOnDisconnect,
-			PathManager:         p.pathManager,
-			Parent:              p,
+			Address:           p.conf.RTSPAddress,
+			ReadTimeout:       p.conf.ReadTimeout,
+			WriteTimeout:      p.conf.WriteTimeout,
+			WriteQueueSize:    p.conf.WriteQueueSize,
+			UseUDP:            useUDP,
+			UseMulticast:      useMulticast,
+			RTPAddress:        p.conf.RTPAddress,
+			RTCPAddress:       p.conf.RTCPAddress,
+			MulticastIPRange:  p.conf.MulticastIPRange,
+			MulticastRTPPort:  p.conf.MulticastRTPPort,
+			MulticastRTCPPort: p.conf.MulticastRTCPPort,
+			RTSPAddress:       p.conf.RTSPAddress,
+			Protocols:         p.conf.Protocols,
+			PathManager:       p.pathManager,
+			Parent:            p,
 		}
 		err := i.Initialize()
 		if err != nil {
@@ -289,9 +283,6 @@ func (p *Core) closeResources(newConf *conf.Conf, calledByAPI bool) {
 		newConf.MulticastRTCPPort != p.conf.MulticastRTCPPort ||
 		newConf.RTSPAddress != p.conf.RTSPAddress ||
 		!reflect.DeepEqual(newConf.Protocols, p.conf.Protocols) ||
-		newConf.RunOnConnect != p.conf.RunOnConnect ||
-		newConf.RunOnConnectRestart != p.conf.RunOnConnectRestart ||
-		newConf.RunOnDisconnect != p.conf.RunOnDisconnect ||
 		closePathManager ||
 		closeLogger
 
@@ -305,9 +296,6 @@ func (p *Core) closeResources(newConf *conf.Conf, calledByAPI bool) {
 		newConf.ServerKey != p.conf.ServerKey ||
 		newConf.RTSPAddress != p.conf.RTSPAddress ||
 		!reflect.DeepEqual(newConf.Protocols, p.conf.Protocols) ||
-		newConf.RunOnConnect != p.conf.RunOnConnect ||
-		newConf.RunOnConnectRestart != p.conf.RunOnConnectRestart ||
-		newConf.RunOnDisconnect != p.conf.RunOnDisconnect ||
 		closePathManager ||
 		closeLogger
 
