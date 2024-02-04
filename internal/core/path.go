@@ -137,9 +137,7 @@ func (pa *path) run() {
 	defer close(pa.done)
 	defer pa.wg.Done()
 
-	if pa.conf.Source == "redirect" {
-		pa.source = &sourceRedirect{}
-	} else if pa.conf.HasStaticSource() {
+	if pa.conf.HasStaticSource() {
 		resolvedSource := pa.conf.Source
 		if len(pa.matches) > 1 {
 			for i, ma := range pa.matches[1:] {
@@ -348,13 +346,6 @@ func (pa *path) doSourceStaticSetNotReady(req defs.PathSourceStaticSetNotReadyRe
 }
 
 func (pa *path) doDescribe(req defs.PathDescribeReq) {
-	if _, ok := pa.source.(*sourceRedirect); ok {
-		req.Res <- defs.PathDescribeRes{
-			Redirect: pa.conf.SourceRedirect,
-		}
-		return
-	}
-
 	if pa.stream != nil {
 		req.Res <- defs.PathDescribeRes{
 			Stream: pa.stream,
