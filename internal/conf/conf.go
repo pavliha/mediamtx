@@ -112,7 +112,6 @@ type Conf struct {
 	WebRTCServerKey             string            `json:"webrtcServerKey"`
 	WebRTCServerCert            string            `json:"webrtcServerCert"`
 	WebRTCAllowOrigin           string            `json:"webrtcAllowOrigin"`
-	WebRTCTrustedProxies        IPsOrCIDRs        `json:"webrtcTrustedProxies"`
 	WebRTCLocalUDPAddress       string            `json:"webrtcLocalUDPAddress"`
 	WebRTCLocalTCPAddress       string            `json:"webrtcLocalTCPAddress"`
 	WebRTCIPsFromInterfaces     bool              `json:"webrtcIPsFromInterfaces"`

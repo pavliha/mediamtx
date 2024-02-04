@@ -154,7 +154,6 @@ type Server struct {
 	ServerKey             string
 	ServerCert            string
 	AllowOrigin           string
-	TrustedProxies        conf.IPsOrCIDRs
 	ReadTimeout           conf.StringDuration
 	WriteQueueSize        int
 	LocalUDPAddress       string
@@ -200,15 +199,11 @@ func (s *Server) Initialize() error {
 	s.done = make(chan struct{})
 
 	s.httpServer = &httpServer{
-		address:        s.Address,
-		encryption:     s.Encryption,
-		serverKey:      s.ServerKey,
-		serverCert:     s.ServerCert,
-		allowOrigin:    s.AllowOrigin,
-		trustedProxies: s.TrustedProxies,
-		readTimeout:    s.ReadTimeout,
-		pathManager:    s.PathManager,
-		parent:         s,
+		address:     s.Address,
+		allowOrigin: s.AllowOrigin,
+		readTimeout: s.ReadTimeout,
+		pathManager: s.PathManager,
+		parent:      s,
 	}
 	err := s.httpServer.initialize()
 	if err != nil {

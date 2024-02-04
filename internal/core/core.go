@@ -231,7 +231,6 @@ func (p *Core) createResources(initial bool) error {
 			ServerKey:             p.conf.WebRTCServerKey,
 			ServerCert:            p.conf.WebRTCServerCert,
 			AllowOrigin:           p.conf.WebRTCAllowOrigin,
-			TrustedProxies:        p.conf.WebRTCTrustedProxies,
 			ReadTimeout:           p.conf.ReadTimeout,
 			WriteQueueSize:        p.conf.WriteQueueSize,
 			LocalUDPAddress:       p.conf.WebRTCLocalUDPAddress,
@@ -306,7 +305,6 @@ func (p *Core) closeResources(newConf *conf.Conf, calledByAPI bool) {
 		newConf.WebRTCServerKey != p.conf.WebRTCServerKey ||
 		newConf.WebRTCServerCert != p.conf.WebRTCServerCert ||
 		newConf.WebRTCAllowOrigin != p.conf.WebRTCAllowOrigin ||
-		!reflect.DeepEqual(newConf.WebRTCTrustedProxies, p.conf.WebRTCTrustedProxies) ||
 		newConf.ReadTimeout != p.conf.ReadTimeout ||
 		newConf.WriteQueueSize != p.conf.WriteQueueSize ||
 		newConf.WebRTCLocalUDPAddress != p.conf.WebRTCLocalUDPAddress ||

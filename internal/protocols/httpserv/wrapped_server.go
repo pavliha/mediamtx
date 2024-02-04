@@ -3,7 +3,6 @@ package httpserv
 
 import (
 	"context"
-	"crypto/tls"
 	"log"
 	"net"
 	"net/http"
@@ -35,27 +34,12 @@ func NewWrappedServer(
 	network string,
 	address string,
 	readTimeout time.Duration,
-	serverCert string,
-	serverKey string,
 	handler http.Handler,
 	parent logger.Writer,
 ) (*WrappedServer, error) {
 	ln, err := net.Listen(network, address)
 	if err != nil {
 		return nil, err
-	}
-
-	var tlsConfig *tls.Config
-	if serverCert != "" {
-		crt, err := tls.LoadX509KeyPair(serverCert, serverKey)
-		if err != nil {
-			ln.Close()
-			return nil, err
-		}
-
-		tlsConfig = &tls.Config{
-			Certificates: []tls.Certificate{crt},
-		}
 	}
 
 	h := handler
@@ -69,17 +53,12 @@ func NewWrappedServer(
 		ln: ln,
 		inner: &http.Server{
 			Handler:           h,
-			TLSConfig:         tlsConfig,
 			ReadHeaderTimeout: readTimeout,
 			ErrorLog:          log.New(&nilWriter{}, "", 0),
 		},
 	}
 
-	if tlsConfig != nil {
-		go s.inner.ServeTLS(s.ln, "", "")
-	} else {
-		go s.inner.Serve(s.ln)
-	}
+	go s.inner.Serve(s.ln)
 
 	return s, nil
 }

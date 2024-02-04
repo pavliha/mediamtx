@@ -48,31 +48,18 @@ func sessionLocation(publish bool, secret uuid.UUID) string {
 }
 
 type httpServer struct {
-	address        string
-	encryption     bool
-	serverKey      string
-	serverCert     string
-	allowOrigin    string
-	trustedProxies conf.IPsOrCIDRs
-	readTimeout    conf.StringDuration
-	pathManager    defs.PathManager
-	parent         *Server
+	address     string
+	allowOrigin string
+	readTimeout conf.StringDuration
+	pathManager defs.PathManager
+	parent      *Server
 
 	inner *httpserv.WrappedServer
 }
 
 func (s *httpServer) initialize() error {
-	if s.encryption {
-		if s.serverCert == "" {
-			return fmt.Errorf("server cert is missing")
-		}
-	} else {
-		s.serverKey = ""
-		s.serverCert = ""
-	}
 
 	router := gin.New()
-	router.SetTrustedProxies(s.trustedProxies.ToTrustedProxies()) //nolint:errcheck
 	router.NoRoute(s.onRequest)
 
 	network, address := restrictnetwork.Restrict("tcp", s.address)
@@ -82,8 +69,6 @@ func (s *httpServer) initialize() error {
 		network,
 		address,
 		time.Duration(s.readTimeout),
-		s.serverCert,
-		s.serverKey,
 		router,
 		s,
 	)

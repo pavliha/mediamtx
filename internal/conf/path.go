@@ -103,10 +103,6 @@ type Path struct {
 	RecordSegmentDuration StringDuration `json:"recordSegmentDuration"`
 	RecordDeleteAfter     StringDuration `json:"recordDeleteAfter"`
 
-	// Authentication
-	PublishIPs IPsOrCIDRs `json:"publishIPs"`
-	ReadIPs    IPsOrCIDRs `json:"readIPs"`
-
 	// Publisher source
 	OverridePublisher        bool   `json:"overridePublisher"`
 	DisablePublisherOverride *bool  `json:"disablePublisherOverride,omitempty"` // deprecated
