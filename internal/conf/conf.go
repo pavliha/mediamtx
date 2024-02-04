@@ -11,7 +11,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/bluenviron/gortsplib/v4"
 	"github.com/bluenviron/gortsplib/v4/pkg/headers"
 
 	"github.com/bluenviron/mediamtx/internal/conf/yaml"
@@ -90,26 +89,11 @@ type Conf struct {
 	WriteQueueSize    int             `json:"writeQueueSize"`
 	UDPMaxPayloadSize int             `json:"udpMaxPayloadSize"`
 
-	// RTSP server
-	RTSP              bool      `json:"rtsp"`
-	RTSPDisable       *bool     `json:"rtspDisable,omitempty"` // deprecated
-	Protocols         Protocols `json:"protocols"`
-	RTSPAddress       string    `json:"rtspAddress"`
-	RTSPSAddress      string    `json:"rtspsAddress"`
-	RTPAddress        string    `json:"rtpAddress"`
-	MulticastIPRange  string    `json:"multicastIPRange"`
-	MulticastRTPPort  int       `json:"multicastRTPPort"`
-	MulticastRTCPPort int       `json:"multicastRTCPPort"`
-	ServerKey         string    `json:"serverKey"`
-	ServerCert        string    `json:"serverCert"`
-
 	// WebRTC server
 	WebRTC                      bool              `json:"webrtc"`
 	WebRTCDisable               *bool             `json:"webrtcDisable,omitempty"` // deprecated
 	WebRTCAddress               string            `json:"webrtcAddress"`
 	WebRTCEncryption            bool              `json:"webrtcEncryption"`
-	WebRTCServerKey             string            `json:"webrtcServerKey"`
-	WebRTCServerCert            string            `json:"webrtcServerCert"`
 	WebRTCAllowOrigin           string            `json:"webrtcAllowOrigin"`
 	WebRTCLocalUDPAddress       string            `json:"webrtcLocalUDPAddress"`
 	WebRTCLocalTCPAddress       string            `json:"webrtcLocalTCPAddress"`
@@ -140,27 +124,9 @@ func (conf *Conf) setDefaults() {
 	conf.WriteQueueSize = 512
 	conf.UDPMaxPayloadSize = 1472
 
-	// RTSP server
-	conf.RTSP = true
-	conf.Protocols = Protocols{
-		Protocol(gortsplib.TransportUDP):          {},
-		Protocol(gortsplib.TransportUDPMulticast): {},
-		Protocol(gortsplib.TransportTCP):          {},
-	}
-	conf.RTSPAddress = ":8554"
-	conf.RTSPSAddress = ":8322"
-	conf.RTPAddress = ":8000"
-	conf.MulticastIPRange = "224.1.0.0/16"
-	conf.MulticastRTPPort = 8002
-	conf.MulticastRTCPPort = 8003
-	conf.ServerKey = "server.key"
-	conf.ServerCert = "server.crt"
-
 	// WebRTC server
 	conf.WebRTC = true
 	conf.WebRTCAddress = ":8889"
-	conf.WebRTCServerKey = "server.key"
-	conf.WebRTCServerCert = "server.crt"
 	conf.WebRTCAllowOrigin = "*"
 	conf.WebRTCLocalUDPAddress = ":8189"
 	conf.WebRTCIPsFromInterfaces = true
@@ -243,12 +209,6 @@ func (conf *Conf) Validate() error {
 		return fmt.Errorf("'udpMaxPayloadSize' must be less than 1472")
 	}
 
-	// RTSP
-
-	if conf.RTSPDisable != nil {
-		conf.RTSP = !*conf.RTSPDisable
-	}
-
 	// WebRTC
 
 	if conf.WebRTCDisable != nil {
@@ -320,11 +280,6 @@ func (conf *Conf) Validate() error {
 
 		pconf := newPath(&conf.PathDefaults, optional)
 		conf.Paths[name] = pconf
-
-		err := pconf.validate(conf, name)
-		if err != nil {
-			return err
-		}
 	}
 
 	return nil

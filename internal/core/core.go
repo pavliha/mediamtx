@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/alecthomas/kong"
+	"github.com/davecgh/go-spew/spew"
 
 	"github.com/bluenviron/mediamtx/internal/conf"
 	"github.com/bluenviron/mediamtx/internal/logger"
@@ -20,11 +21,7 @@ import (
 var version = "v0.0.0"
 
 var defaultConfPaths = []string{
-	"rtsp-simple-server.yml",
 	"mediamtx.yml",
-	"/usr/local/etc/mediamtx.yml",
-	"/usr/etc/mediamtx.yml",
-	"/etc/mediamtx/mediamtx.yml",
 }
 
 var cli struct {
@@ -86,7 +83,7 @@ func New(args []string) (*Core, bool) {
 		return nil, false
 	}
 
-	err = p.createResources(true)
+	err = p.createResources()
 	if err != nil {
 		if p.logger != nil {
 			p.Log(logger.Error, "%s", err)
@@ -141,7 +138,7 @@ outer:
 	p.closeResources(nil, false)
 }
 
-func (p *Core) createResources(initial bool) error {
+func (p *Core) createResources() error {
 	var err error
 
 	if p.logger == nil {
@@ -155,66 +152,54 @@ func (p *Core) createResources(initial bool) error {
 		}
 	}
 
-	if initial {
-		p.Log(logger.Info, "MediaMTX %s", version)
-
-		if p.confPath != "" {
-			a, _ := filepath.Abs(p.confPath)
-			p.Log(logger.Info, "configuration loaded from %s", a)
-		} else {
-			list := make([]string, len(defaultConfPaths))
-			for i, pa := range defaultConfPaths {
-				a, _ := filepath.Abs(pa)
-				list[i] = a
-			}
-
-			p.Log(logger.Warn,
-				"configuration file not found (looked in %s), using an empty configuration",
-				strings.Join(list, ", "))
+	if p.confPath != "" {
+		a, _ := filepath.Abs(p.confPath)
+		p.Log(logger.Info, "configuration loaded from %s", a)
+	} else {
+		list := make([]string, len(defaultConfPaths))
+		for i, pa := range defaultConfPaths {
+			a, _ := filepath.Abs(pa)
+			list[i] = a
 		}
 
-	}
-	if p.pathManager == nil {
-		p.pathManager = &pathManager{
-			logLevel:          p.conf.LogLevel,
-			rtspAddress:       p.conf.RTSPAddress,
-			readTimeout:       p.conf.ReadTimeout,
-			writeTimeout:      p.conf.WriteTimeout,
-			writeQueueSize:    p.conf.WriteQueueSize,
-			udpMaxPayloadSize: p.conf.UDPMaxPayloadSize,
-			pathConfs:         p.conf.Paths,
-			parent:            p,
-		}
-		p.pathManager.initialize()
-
+		p.Log(logger.Warn,
+			"configuration file not found (looked in %s), using an empty configuration",
+			strings.Join(list, ", "))
 	}
 
-	if p.conf.WebRTC &&
-		p.webRTCServer == nil {
-		i := &webrtc.Server{
-			Address:               p.conf.WebRTCAddress,
-			Encryption:            p.conf.WebRTCEncryption,
-			ServerKey:             p.conf.WebRTCServerKey,
-			ServerCert:            p.conf.WebRTCServerCert,
-			AllowOrigin:           p.conf.WebRTCAllowOrigin,
-			ReadTimeout:           p.conf.ReadTimeout,
-			WriteQueueSize:        p.conf.WriteQueueSize,
-			LocalUDPAddress:       p.conf.WebRTCLocalUDPAddress,
-			LocalTCPAddress:       p.conf.WebRTCLocalTCPAddress,
-			IPsFromInterfaces:     p.conf.WebRTCIPsFromInterfaces,
-			IPsFromInterfacesList: p.conf.WebRTCIPsFromInterfacesList,
-			AdditionalHosts:       p.conf.WebRTCAdditionalHosts,
-			ICEServers:            p.conf.WebRTCICEServers2,
-			PathManager:           p.pathManager,
-			Parent:                p,
-		}
-		err := i.Initialize()
-		if err != nil {
-			return err
-		}
-		p.webRTCServer = i
-
+	p.pathManager = &pathManager{
+		logLevel:          p.conf.LogLevel,
+		readTimeout:       p.conf.ReadTimeout,
+		writeTimeout:      p.conf.WriteTimeout,
+		writeQueueSize:    p.conf.WriteQueueSize,
+		udpMaxPayloadSize: p.conf.UDPMaxPayloadSize,
+		pathConfs:         p.conf.Paths,
+		parent:            p,
 	}
+	p.pathManager.initialize()
+
+	spew.Dump(p.conf)
+
+	i := &webrtc.Server{
+		Address:               p.conf.WebRTCAddress,
+		Encryption:            p.conf.WebRTCEncryption,
+		AllowOrigin:           p.conf.WebRTCAllowOrigin,
+		ReadTimeout:           p.conf.ReadTimeout,
+		WriteQueueSize:        p.conf.WriteQueueSize,
+		LocalUDPAddress:       p.conf.WebRTCLocalUDPAddress,
+		LocalTCPAddress:       p.conf.WebRTCLocalTCPAddress,
+		IPsFromInterfaces:     p.conf.WebRTCIPsFromInterfaces,
+		IPsFromInterfacesList: p.conf.WebRTCIPsFromInterfacesList,
+		AdditionalHosts:       p.conf.WebRTCAdditionalHosts,
+		ICEServers:            p.conf.WebRTCICEServers2,
+		PathManager:           p.pathManager,
+		Parent:                p,
+	}
+	err = i.Initialize()
+	if err != nil {
+		return err
+	}
+	p.webRTCServer = i
 
 	return nil
 }
@@ -227,7 +212,6 @@ func (p *Core) closeResources(newConf *conf.Conf, calledByAPI bool) {
 
 	closePathManager := newConf == nil ||
 		newConf.LogLevel != p.conf.LogLevel ||
-		newConf.RTSPAddress != p.conf.RTSPAddress ||
 		newConf.ReadTimeout != p.conf.ReadTimeout ||
 		newConf.WriteTimeout != p.conf.WriteTimeout ||
 		newConf.WriteQueueSize != p.conf.WriteQueueSize ||
@@ -238,8 +222,6 @@ func (p *Core) closeResources(newConf *conf.Conf, calledByAPI bool) {
 		newConf.WebRTC != p.conf.WebRTC ||
 		newConf.WebRTCAddress != p.conf.WebRTCAddress ||
 		newConf.WebRTCEncryption != p.conf.WebRTCEncryption ||
-		newConf.WebRTCServerKey != p.conf.WebRTCServerKey ||
-		newConf.WebRTCServerCert != p.conf.WebRTCServerCert ||
 		newConf.WebRTCAllowOrigin != p.conf.WebRTCAllowOrigin ||
 		newConf.ReadTimeout != p.conf.ReadTimeout ||
 		newConf.WriteQueueSize != p.conf.WriteQueueSize ||

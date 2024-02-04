@@ -153,9 +153,7 @@ func (pa *path) run() {
 		}
 		pa.source.(*staticSourceHandler).initialize()
 
-		if !pa.conf.SourceOnDemand {
-			pa.source.(*staticSourceHandler).start(false)
-		}
+		pa.source.(*staticSourceHandler).start(false)
 	}
 
 	err := pa.runInner()
@@ -184,7 +182,7 @@ func (pa *path) run() {
 
 	if pa.source != nil {
 		if source, ok := pa.source.(*staticSourceHandler); ok {
-			if !pa.conf.SourceOnDemand || pa.onDemandStaticSourceState != pathOnDemandStateInitial {
+			if pa.onDemandStaticSourceState != pathOnDemandStateInitial {
 				source.close("path is closing")
 			}
 		} else if source, ok := pa.source.(defs.Publisher); ok {
@@ -224,13 +222,6 @@ func (pa *path) runInner() error {
 
 		case req := <-pa.chStaticSourceSetReady:
 			pa.doSourceStaticSetReady(req)
-
-		case req := <-pa.chStaticSourceSetNotReady:
-			pa.doSourceStaticSetNotReady(req)
-
-			if pa.shouldClose() {
-				return fmt.Errorf("not in use")
-			}
 
 		case req := <-pa.chDescribe:
 			pa.doDescribe(req)
@@ -319,12 +310,6 @@ func (pa *path) doSourceStaticSetReady(req defs.PathSourceStaticSetReadyReq) {
 		return
 	}
 
-	if pa.conf.HasOnDemandStaticSource() {
-		pa.onDemandStaticSourceReadyTimer.Stop()
-		pa.onDemandStaticSourceReadyTimer = newEmptyTimer()
-		pa.onDemandStaticSourceScheduleClose()
-	}
-
 	pa.consumeOnHoldRequests()
 
 	req.Res <- defs.PathSourceStaticSetReadyRes{Stream: pa.stream}
@@ -337,7 +322,7 @@ func (pa *path) doSourceStaticSetNotReady(req defs.PathSourceStaticSetNotReadyRe
 	// in order to avoid a deadlock due to staticSourceHandler.stop()
 	close(req.Res)
 
-	if pa.conf.HasOnDemandStaticSource() && pa.onDemandStaticSourceState != pathOnDemandStateInitial {
+	if pa.onDemandStaticSourceState != pathOnDemandStateInitial {
 		pa.onDemandStaticSourceStop("an error occurred")
 	}
 }
@@ -347,22 +332,6 @@ func (pa *path) doDescribe(req defs.PathDescribeReq) {
 		req.Res <- defs.PathDescribeRes{
 			Stream: pa.stream,
 		}
-		return
-	}
-
-	if pa.conf.HasOnDemandStaticSource() {
-		if pa.onDemandStaticSourceState == pathOnDemandStateInitial {
-			pa.onDemandStaticSourceStart()
-		}
-		pa.describeRequestsOnHold = append(pa.describeRequestsOnHold, req)
-		return
-	}
-
-	if pa.conf.HasOnDemandPublisher() {
-		if pa.onDemandPublisherState == pathOnDemandStateInitial {
-			pa.onDemandPublisherStart(req.AccessRequest.Query)
-		}
-		pa.describeRequestsOnHold = append(pa.describeRequestsOnHold, req)
 		return
 	}
 
@@ -434,7 +403,7 @@ func (pa *path) doStartPublisher(req defs.PathStartPublisherReq) {
 		pa.name,
 		defs.MediasInfo(req.Desc.Medias))
 
-	if pa.conf.HasOnDemandPublisher() && pa.onDemandPublisherState != pathOnDemandStateInitial {
+	if pa.onDemandPublisherState != pathOnDemandStateInitial {
 		pa.onDemandPublisherReadyTimer.Stop()
 		pa.onDemandPublisherReadyTimer = newEmptyTimer()
 		pa.onDemandPublisherScheduleClose()
@@ -458,22 +427,6 @@ func (pa *path) doAddReader(req defs.PathAddReaderReq) {
 		return
 	}
 
-	if pa.conf.HasOnDemandStaticSource() {
-		if pa.onDemandStaticSourceState == pathOnDemandStateInitial {
-			pa.onDemandStaticSourceStart()
-		}
-		pa.readerAddRequestsOnHold = append(pa.readerAddRequestsOnHold, req)
-		return
-	}
-
-	if pa.conf.HasOnDemandPublisher() {
-		if pa.onDemandPublisherState == pathOnDemandStateInitial {
-			pa.onDemandPublisherStart(req.AccessRequest.Query)
-		}
-		pa.readerAddRequestsOnHold = append(pa.readerAddRequestsOnHold, req)
-		return
-	}
-
 	req.Res <- defs.PathAddReaderRes{Err: defs.PathNoOnePublishingError{PathName: pa.name}}
 }
 
@@ -483,17 +436,6 @@ func (pa *path) doRemoveReader(req defs.PathRemoveReaderReq) {
 	}
 	close(req.Res)
 
-	if len(pa.readers) == 0 {
-		if pa.conf.HasOnDemandStaticSource() {
-			if pa.onDemandStaticSourceState == pathOnDemandStateReady {
-				pa.onDemandStaticSourceScheduleClose()
-			}
-		} else if pa.conf.HasOnDemandPublisher() {
-			if pa.onDemandPublisherState == pathOnDemandStateReady {
-				pa.onDemandPublisherScheduleClose()
-			}
-		}
-	}
 }
 
 func (pa *path) SafeConf() *conf.Path {
@@ -514,14 +456,12 @@ func (pa *path) onDemandStaticSourceStart() {
 	pa.source.(*staticSourceHandler).start(true)
 
 	pa.onDemandStaticSourceReadyTimer.Stop()
-	pa.onDemandStaticSourceReadyTimer = time.NewTimer(time.Duration(pa.conf.SourceOnDemandStartTimeout))
 
 	pa.onDemandStaticSourceState = pathOnDemandStateWaitingReady
 }
 
 func (pa *path) onDemandStaticSourceScheduleClose() {
 	pa.onDemandStaticSourceCloseTimer.Stop()
-	pa.onDemandStaticSourceCloseTimer = time.NewTimer(time.Duration(pa.conf.SourceOnDemandCloseAfter))
 
 	pa.onDemandStaticSourceState = pathOnDemandStateClosing
 }
@@ -539,14 +479,12 @@ func (pa *path) onDemandStaticSourceStop(reason string) {
 
 func (pa *path) onDemandPublisherStart(query string) {
 	pa.onDemandPublisherReadyTimer.Stop()
-	pa.onDemandPublisherReadyTimer = time.NewTimer(time.Duration(pa.conf.RunOnDemandStartTimeout))
 
 	pa.onDemandPublisherState = pathOnDemandStateWaitingReady
 }
 
 func (pa *path) onDemandPublisherScheduleClose() {
 	pa.onDemandPublisherCloseTimer.Stop()
-	pa.onDemandPublisherCloseTimer = time.NewTimer(time.Duration(pa.conf.RunOnDemandCloseAfter))
 
 	pa.onDemandPublisherState = pathOnDemandStateClosing
 }
@@ -634,20 +572,6 @@ func (pa *path) addReaderPost(req defs.PathAddReaderReq) {
 	}
 
 	pa.readers[req.Author] = struct{}{}
-
-	if pa.conf.HasOnDemandStaticSource() {
-		if pa.onDemandStaticSourceState == pathOnDemandStateClosing {
-			pa.onDemandStaticSourceState = pathOnDemandStateReady
-			pa.onDemandStaticSourceCloseTimer.Stop()
-			pa.onDemandStaticSourceCloseTimer = newEmptyTimer()
-		}
-	} else if pa.conf.HasOnDemandPublisher() {
-		if pa.onDemandPublisherState == pathOnDemandStateClosing {
-			pa.onDemandPublisherState = pathOnDemandStateReady
-			pa.onDemandPublisherCloseTimer.Stop()
-			pa.onDemandPublisherCloseTimer = newEmptyTimer()
-		}
-	}
 
 	req.Res <- defs.PathAddReaderRes{
 		Path:   pa,
