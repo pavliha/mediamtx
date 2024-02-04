@@ -37,16 +37,6 @@ func FormatsInfo(formats []format.Format) string {
 		strings.Join(FormatsToCodecs(formats), ", "))
 }
 
-// MediasToCodecs returns the name of codecs of given formats.
-func MediasToCodecs(medias []*description.Media) []string {
-	var formats []format.Format
-	for _, media := range medias {
-		formats = append(formats, media.Formats...)
-	}
-
-	return FormatsToCodecs(formats)
-}
-
 // MediasInfo returns a description of medias.
 func MediasInfo(medias []*description.Media) string {
 	var formats []format.Format
