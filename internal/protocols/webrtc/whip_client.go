@@ -26,7 +26,6 @@ type WHIPClient struct {
 func (c *WHIPClient) Publish(
 	ctx context.Context,
 	videoTrack format.Format,
-	audioTrack format.Format,
 ) ([]*OutgoingTrack, error) {
 	iceServers, err := WHIPOptionsICEServers(ctx, c.HTTPClient, c.URL.String())
 	if err != nil {
@@ -52,7 +51,7 @@ func (c *WHIPClient) Publish(
 		return nil, err
 	}
 
-	tracks, err := c.pc.SetupOutgoingTracks(videoTrack, audioTrack)
+	tracks, err := c.pc.SetupOutgoingTracks(videoTrack)
 	if err != nil {
 		c.pc.Close()
 		return nil, err

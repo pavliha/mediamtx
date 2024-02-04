@@ -12,14 +12,11 @@ import (
 
 	"github.com/alecthomas/kong"
 	"github.com/bluenviron/gortsplib/v4"
-	"github.com/gin-gonic/gin"
 
-	"github.com/bluenviron/mediamtx/internal/api"
 	"github.com/bluenviron/mediamtx/internal/conf"
 	"github.com/bluenviron/mediamtx/internal/confwatcher"
 	"github.com/bluenviron/mediamtx/internal/externalcmd"
 	"github.com/bluenviron/mediamtx/internal/logger"
-	"github.com/bluenviron/mediamtx/internal/metrics"
 	"github.com/bluenviron/mediamtx/internal/pprof"
 	"github.com/bluenviron/mediamtx/internal/rlimit"
 	"github.com/bluenviron/mediamtx/internal/servers/rtsp"
@@ -49,13 +46,11 @@ type Core struct {
 	conf            *conf.Conf
 	logger          *logger.Logger
 	externalCmdPool *externalcmd.Pool
-	metrics         *metrics.Metrics
 	pprof           *pprof.PPROF
 	pathManager     *pathManager
 	rtspServer      *rtsp.Server
 	rtspsServer     *rtsp.Server
 	webRTCServer    *webrtc.Server
-	api             *api.API
 	confWatcher     *confwatcher.ConfWatcher
 
 	// in
@@ -228,25 +223,8 @@ func (p *Core) createResources(initial bool) error {
 		// to allow the maximum possible number of clients.
 		rlimit.Raise() //nolint:errcheck
 
-		gin.SetMode(gin.ReleaseMode)
-
 		p.externalCmdPool = externalcmd.NewPool()
 	}
-
-	if p.conf.Metrics &&
-		p.metrics == nil {
-		i := &metrics.Metrics{
-			Address:     p.conf.MetricsAddress,
-			ReadTimeout: p.conf.ReadTimeout,
-			Parent:      p,
-		}
-		err := i.Initialize()
-		if err != nil {
-			return err
-		}
-		p.metrics = i
-	}
-
 	if p.conf.PPROF &&
 		p.pprof == nil {
 		i := &pprof.PPROF{
@@ -277,9 +255,6 @@ func (p *Core) createResources(initial bool) error {
 		}
 		p.pathManager.initialize()
 
-		if p.metrics != nil {
-			p.metrics.SetPathManager(p.pathManager)
-		}
 	}
 
 	if p.conf.RTSP &&
@@ -320,9 +295,6 @@ func (p *Core) createResources(initial bool) error {
 		}
 		p.rtspServer = i
 
-		if p.metrics != nil {
-			p.metrics.SetRTSPServer(p.rtspServer)
-		}
 	}
 
 	if p.conf.RTSP &&
@@ -360,9 +332,6 @@ func (p *Core) createResources(initial bool) error {
 		}
 		p.rtspsServer = i
 
-		if p.metrics != nil {
-			p.metrics.SetRTSPSServer(p.rtspsServer)
-		}
 	}
 
 	if p.conf.WebRTC &&
@@ -392,28 +361,6 @@ func (p *Core) createResources(initial bool) error {
 		}
 		p.webRTCServer = i
 
-		if p.metrics != nil {
-			p.metrics.SetWebRTCServer(p.webRTCServer)
-		}
-	}
-
-	if p.conf.API &&
-		p.api == nil {
-		i := &api.API{
-			Address:      p.conf.APIAddress,
-			ReadTimeout:  p.conf.ReadTimeout,
-			Conf:         p.conf,
-			PathManager:  p.pathManager,
-			RTSPServer:   p.rtspServer,
-			RTSPSServer:  p.rtspsServer,
-			WebRTCServer: p.webRTCServer,
-			Parent:       p,
-		}
-		err := i.Initialize()
-		if err != nil {
-			return err
-		}
-		p.api = i
 	}
 
 	if initial && p.confPath != "" {
@@ -432,12 +379,6 @@ func (p *Core) closeResources(newConf *conf.Conf, calledByAPI bool) {
 		!reflect.DeepEqual(newConf.LogDestinations, p.conf.LogDestinations) ||
 		newConf.LogFile != p.conf.LogFile
 
-	closeMetrics := newConf == nil ||
-		newConf.Metrics != p.conf.Metrics ||
-		newConf.MetricsAddress != p.conf.MetricsAddress ||
-		newConf.ReadTimeout != p.conf.ReadTimeout ||
-		closeLogger
-
 	closePPROF := newConf == nil ||
 		newConf.PPROF != p.conf.PPROF ||
 		newConf.PPROFAddress != p.conf.PPROFAddress ||
@@ -453,7 +394,6 @@ func (p *Core) closeResources(newConf *conf.Conf, calledByAPI bool) {
 		newConf.WriteTimeout != p.conf.WriteTimeout ||
 		newConf.WriteQueueSize != p.conf.WriteQueueSize ||
 		newConf.UDPMaxPayloadSize != p.conf.UDPMaxPayloadSize ||
-		closeMetrics ||
 		closeLogger
 	if !closePathManager && !reflect.DeepEqual(newConf.Paths, p.conf.Paths) {
 		p.pathManager.ReloadPathConfs(newConf.Paths)
@@ -478,7 +418,6 @@ func (p *Core) closeResources(newConf *conf.Conf, calledByAPI bool) {
 		newConf.RunOnConnect != p.conf.RunOnConnect ||
 		newConf.RunOnConnectRestart != p.conf.RunOnConnectRestart ||
 		newConf.RunOnDisconnect != p.conf.RunOnDisconnect ||
-		closeMetrics ||
 		closePathManager ||
 		closeLogger
 
@@ -497,7 +436,6 @@ func (p *Core) closeResources(newConf *conf.Conf, calledByAPI bool) {
 		newConf.RunOnConnect != p.conf.RunOnConnect ||
 		newConf.RunOnConnectRestart != p.conf.RunOnConnectRestart ||
 		newConf.RunOnDisconnect != p.conf.RunOnDisconnect ||
-		closeMetrics ||
 		closePathManager ||
 		closeLogger
 
@@ -517,18 +455,7 @@ func (p *Core) closeResources(newConf *conf.Conf, calledByAPI bool) {
 		!reflect.DeepEqual(newConf.WebRTCIPsFromInterfacesList, p.conf.WebRTCIPsFromInterfacesList) ||
 		!reflect.DeepEqual(newConf.WebRTCAdditionalHosts, p.conf.WebRTCAdditionalHosts) ||
 		!reflect.DeepEqual(newConf.WebRTCICEServers2, p.conf.WebRTCICEServers2) ||
-		closeMetrics ||
 		closePathManager ||
-		closeLogger
-
-	closeAPI := newConf == nil ||
-		newConf.API != p.conf.API ||
-		newConf.APIAddress != p.conf.APIAddress ||
-		newConf.ReadTimeout != p.conf.ReadTimeout ||
-		closePathManager ||
-		closeRTSPServer ||
-		closeRTSPSServer ||
-		closeWebRTCServer ||
 		closeLogger
 
 	if newConf == nil && p.confWatcher != nil {
@@ -536,46 +463,25 @@ func (p *Core) closeResources(newConf *conf.Conf, calledByAPI bool) {
 		p.confWatcher = nil
 	}
 
-	if p.api != nil {
-		if closeAPI {
-			p.api.Close()
-			p.api = nil
-		} else if !calledByAPI { // avoid a loop
-			p.api.ReloadConf(newConf)
-		}
-	}
-
 	if closeWebRTCServer && p.webRTCServer != nil {
-		if p.metrics != nil {
-			p.metrics.SetWebRTCServer(nil)
-		}
 
 		p.webRTCServer.Close()
 		p.webRTCServer = nil
 	}
 
 	if closeRTSPSServer && p.rtspsServer != nil {
-		if p.metrics != nil {
-			p.metrics.SetRTSPSServer(nil)
-		}
 
 		p.rtspsServer.Close()
 		p.rtspsServer = nil
 	}
 
 	if closeRTSPServer && p.rtspServer != nil {
-		if p.metrics != nil {
-			p.metrics.SetRTSPServer(nil)
-		}
 
 		p.rtspServer.Close()
 		p.rtspServer = nil
 	}
 
 	if closePathManager && p.pathManager != nil {
-		if p.metrics != nil {
-			p.metrics.SetPathManager(nil)
-		}
 
 		p.pathManager.close()
 		p.pathManager = nil
@@ -584,11 +490,6 @@ func (p *Core) closeResources(newConf *conf.Conf, calledByAPI bool) {
 	if closePPROF && p.pprof != nil {
 		p.pprof.Close()
 		p.pprof = nil
-	}
-
-	if closeMetrics && p.metrics != nil {
-		p.metrics.Close()
-		p.metrics = nil
 	}
 
 	if newConf == nil && p.externalCmdPool != nil {

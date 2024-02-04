@@ -18,36 +18,6 @@ func stringInSlice(a string, list []string) bool {
 var videoCodecs = []webrtc.RTPCodecParameters{
 	{
 		RTPCodecCapability: webrtc.RTPCodecCapability{
-			MimeType:  webrtc.MimeTypeAV1,
-			ClockRate: 90000,
-		},
-		PayloadType: 96,
-	},
-	{
-		RTPCodecCapability: webrtc.RTPCodecCapability{
-			MimeType:    webrtc.MimeTypeVP9,
-			ClockRate:   90000,
-			SDPFmtpLine: "profile-id=0",
-		},
-		PayloadType: 97,
-	},
-	{
-		RTPCodecCapability: webrtc.RTPCodecCapability{
-			MimeType:    webrtc.MimeTypeVP9,
-			ClockRate:   90000,
-			SDPFmtpLine: "profile-id=1",
-		},
-		PayloadType: 98,
-	},
-	{
-		RTPCodecCapability: webrtc.RTPCodecCapability{
-			MimeType:  webrtc.MimeTypeVP8,
-			ClockRate: 90000,
-		},
-		PayloadType: 99,
-	},
-	{
-		RTPCodecCapability: webrtc.RTPCodecCapability{
 			MimeType:    webrtc.MimeTypeH264,
 			ClockRate:   90000,
 			SDPFmtpLine: "level-asymmetry-allowed=1;packetization-mode=1;profile-level-id=42001f",
@@ -61,39 +31,6 @@ var videoCodecs = []webrtc.RTPCodecParameters{
 			SDPFmtpLine: "level-asymmetry-allowed=1;packetization-mode=1;profile-level-id=42e01f",
 		},
 		PayloadType: 101,
-	},
-}
-
-var audioCodecs = []webrtc.RTPCodecParameters{
-	{
-		RTPCodecCapability: webrtc.RTPCodecCapability{
-			MimeType:    webrtc.MimeTypeOpus,
-			ClockRate:   48000,
-			Channels:    2,
-			SDPFmtpLine: "minptime=10;useinbandfec=1;stereo=1;sprop-stereo=1",
-		},
-		PayloadType: 111,
-	},
-	{
-		RTPCodecCapability: webrtc.RTPCodecCapability{
-			MimeType:  webrtc.MimeTypeG722,
-			ClockRate: 8000,
-		},
-		PayloadType: 9,
-	},
-	{
-		RTPCodecCapability: webrtc.RTPCodecCapability{
-			MimeType:  webrtc.MimeTypePCMU,
-			ClockRate: 8000,
-		},
-		PayloadType: 0,
-	},
-	{
-		RTPCodecCapability: webrtc.RTPCodecCapability{
-			MimeType:  webrtc.MimeTypePCMA,
-			ClockRate: 8000,
-		},
-		PayloadType: 8,
 	},
 }
 
@@ -142,13 +79,6 @@ func NewAPI(cnf APIConf) (*webrtc.API, error) {
 
 	for _, codec := range videoCodecs {
 		err := mediaEngine.RegisterCodec(codec, webrtc.RTPCodecTypeVideo)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	for _, codec := range audioCodecs {
-		err := mediaEngine.RegisterCodec(codec, webrtc.RTPCodecTypeAudio)
 		if err != nil {
 			return nil, err
 		}

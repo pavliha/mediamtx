@@ -274,11 +274,10 @@ func (co *PeerConnection) GatherIncomingTracks(
 // SetupOutgoingTracks setups outgoing tracks.
 func (co *PeerConnection) SetupOutgoingTracks(
 	videoTrack format.Format,
-	audioTrack format.Format,
 ) ([]*OutgoingTrack, error) {
 	var tracks []*OutgoingTrack
 
-	for _, forma := range []format.Format{videoTrack, audioTrack} {
+	for _, forma := range []format.Format{videoTrack} {
 		if forma != nil {
 			track, err := newOutgoingTrack(forma, co.wr.AddTrack)
 			if err != nil {

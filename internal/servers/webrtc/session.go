@@ -87,69 +87,6 @@ func findVideoTrack(
 	return nil, nil
 }
 
-func findAudioTrack(
-	stream *stream.Stream,
-	writer *asyncwriter.Writer,
-) (format.Format, setupStreamFunc) {
-	var opusFormat *format.Opus
-	media := stream.Desc().FindFormat(&opusFormat)
-
-	if opusFormat != nil {
-		return opusFormat, func(track *webrtc.OutgoingTrack) error {
-			stream.AddReader(writer, media, opusFormat, func(u unit.Unit) error {
-				for _, pkt := range u.GetRTPPackets() {
-					track.WriteRTP(pkt) //nolint:errcheck
-				}
-
-				return nil
-			})
-			return nil
-		}
-	}
-
-	var g722Format *format.G722
-	media = stream.Desc().FindFormat(&g722Format)
-
-	if g722Format != nil {
-		return g722Format, func(track *webrtc.OutgoingTrack) error {
-			stream.AddReader(writer, media, g722Format, func(u unit.Unit) error {
-				for _, pkt := range u.GetRTPPackets() {
-					track.WriteRTP(pkt) //nolint:errcheck
-				}
-
-				return nil
-			})
-			return nil
-		}
-	}
-
-	var g711Format *format.G711
-	media = stream.Desc().FindFormat(&g711Format)
-
-	if g711Format != nil {
-		return g711Format, func(track *webrtc.OutgoingTrack) error {
-			if g711Format.SampleRate != 8000 {
-				return fmt.Errorf("unsupported G711 sample rate")
-			}
-
-			if g711Format.ChannelCount != 1 {
-				return fmt.Errorf("unsupported G711 channel count")
-			}
-
-			stream.AddReader(writer, media, g711Format, func(u unit.Unit) error {
-				for _, pkt := range u.GetRTPPackets() {
-					track.WriteRTP(pkt) //nolint:errcheck
-				}
-
-				return nil
-			})
-			return nil
-		}
-	}
-
-	return nil, nil
-}
-
 func whipOffer(body []byte) *pwebrtc.SessionDescription {
 	return &pwebrtc.SessionDescription{
 		Type: pwebrtc.SDPTypeOffer,
@@ -428,14 +365,13 @@ func (s *session) runRead() (int, error) {
 	writer := asyncwriter.New(s.writeQueueSize, s)
 
 	videoTrack, videoSetup := findVideoTrack(res.Stream, writer)
-	audioTrack, audioSetup := findAudioTrack(res.Stream, writer)
 
-	if videoTrack == nil && audioTrack == nil {
+	if videoTrack == nil {
 		return http.StatusBadRequest, fmt.Errorf(
 			"the stream doesn't contain any supported codec, which are currently AV1, VP9, VP8, H264, Opus, G722, G711")
 	}
 
-	tracks, err := pc.SetupOutgoingTracks(videoTrack, audioTrack)
+	tracks, err := pc.SetupOutgoingTracks(videoTrack)
 	if err != nil {
 		return http.StatusBadRequest, err
 	}
@@ -470,13 +406,6 @@ func (s *session) runRead() (int, error) {
 			return 0, err
 		}
 		n++
-	}
-
-	if audioTrack != nil {
-		err := audioSetup(tracks[n])
-		if err != nil {
-			return 0, err
-		}
 	}
 
 	s.Log(logger.Info, "is reading from path '%s', %s",
