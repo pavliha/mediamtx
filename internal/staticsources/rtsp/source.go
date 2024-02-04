@@ -12,7 +12,6 @@ import (
 	"github.com/bluenviron/mediamtx/internal/conf"
 	"github.com/bluenviron/mediamtx/internal/defs"
 	"github.com/bluenviron/mediamtx/internal/logger"
-	"github.com/bluenviron/mediamtx/internal/protocols/tls"
 )
 
 func createRangeHeader(cnf *conf.Path) (*headers.Range, error) {
@@ -82,7 +81,6 @@ func (s *Source) Run(params defs.StaticSourceRunParams) error {
 
 	c := &gortsplib.Client{
 		Transport:      params.Conf.RTSPTransport.Transport,
-		TLSConfig:      tls.ConfigForFingerprint(params.Conf.SourceFingerprint),
 		ReadTimeout:    time.Duration(s.ReadTimeout),
 		WriteTimeout:   time.Duration(s.WriteTimeout),
 		WriteQueueSize: s.WriteQueueSize,
