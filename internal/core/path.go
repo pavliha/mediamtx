@@ -64,8 +64,6 @@ type path struct {
 	publisherQuery                 string
 	stream                         *stream.Stream
 	readyTime                      time.Time
-	onUnDemandHook                 func(string)
-	onNotReadyHook                 func()
 	readers                        map[defs.Reader]struct{}
 	describeRequestsOnHold         []defs.PathDescribeReq
 	readerAddRequestsOnHold        []defs.PathAddReaderReq
@@ -197,10 +195,6 @@ func (pa *path) run() {
 		} else if source, ok := pa.source.(defs.Publisher); ok {
 			source.Close()
 		}
-	}
-
-	if pa.onUnDemandHook != nil {
-		pa.onUnDemandHook("path destroyed")
 	}
 
 	pa.Log(logger.Debug, "destroyed: %v", err)
@@ -592,9 +586,6 @@ func (pa *path) onDemandPublisherStop(reason string) {
 		pa.onDemandPublisherCloseTimer = newEmptyTimer()
 	}
 
-	pa.onUnDemandHook(reason)
-	pa.onUnDemandHook = nil
-
 	pa.onDemandPublisherState = pathOnDemandStateInitial
 }
 
@@ -638,8 +629,6 @@ func (pa *path) setNotReady() {
 		pa.executeRemoveReader(r)
 		r.Close()
 	}
-
-	pa.onNotReadyHook()
 
 	if pa.stream != nil {
 		pa.stream.Close()
