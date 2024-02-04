@@ -155,7 +155,6 @@ type Server struct {
 	ServerCert            string
 	AllowOrigin           string
 	ReadTimeout           conf.StringDuration
-	WriteQueueSize        int
 	LocalUDPAddress       string
 	LocalTCPAddress       string
 	IPsFromInterfaces     bool

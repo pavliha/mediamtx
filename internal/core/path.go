@@ -40,17 +40,16 @@ const (
 )
 
 type path struct {
-	parentCtx      context.Context
-	logLevel       conf.LogLevel
-	readTimeout    conf.StringDuration
-	writeTimeout   conf.StringDuration
-	writeQueueSize int
-	confName       string
-	conf           *conf.Path
-	name           string
-	matches        []string
-	wg             *sync.WaitGroup
-	parent         pathParent
+	parentCtx    context.Context
+	logLevel     conf.LogLevel
+	readTimeout  conf.StringDuration
+	writeTimeout conf.StringDuration
+	confName     string
+	conf         *conf.Path
+	name         string
+	matches      []string
+	wg           *sync.WaitGroup
+	parent       pathParent
 
 	ctx                            context.Context
 	ctxCancel                      func()
@@ -145,7 +144,6 @@ func (pa *path) run() {
 			logLevel:       pa.logLevel,
 			readTimeout:    pa.readTimeout,
 			writeTimeout:   pa.writeTimeout,
-			writeQueueSize: pa.writeQueueSize,
 			resolvedSource: resolvedSource,
 			parent:         pa,
 		}

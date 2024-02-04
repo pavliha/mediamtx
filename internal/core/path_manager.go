@@ -20,12 +20,11 @@ type pathManagerParent interface {
 }
 
 type pathManager struct {
-	logLevel       conf.LogLevel
-	readTimeout    conf.StringDuration
-	writeTimeout   conf.StringDuration
-	writeQueueSize int
-	pathConfs      map[string]*conf.Path
-	parent         pathManagerParent
+	logLevel     conf.LogLevel
+	readTimeout  conf.StringDuration
+	writeTimeout conf.StringDuration
+	pathConfs    map[string]*conf.Path
+	parent       pathManagerParent
 
 	ctx         context.Context
 	ctxCancel   func()
@@ -191,17 +190,16 @@ func (pm *pathManager) createPath(
 	matches []string,
 ) {
 	pa := &path{
-		parentCtx:      pm.ctx,
-		logLevel:       pm.logLevel,
-		readTimeout:    pm.readTimeout,
-		writeTimeout:   pm.writeTimeout,
-		writeQueueSize: pm.writeQueueSize,
-		confName:       pathConfName,
-		conf:           pathConf,
-		name:           name,
-		matches:        matches,
-		wg:             &pm.wg,
-		parent:         pm,
+		parentCtx:    pm.ctx,
+		logLevel:     pm.logLevel,
+		readTimeout:  pm.readTimeout,
+		writeTimeout: pm.writeTimeout,
+		confName:     pathConfName,
+		conf:         pathConf,
+		name:         name,
+		matches:      matches,
+		wg:           &pm.wg,
+		parent:       pm,
 	}
 	pa.initialize()
 

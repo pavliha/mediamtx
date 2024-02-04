@@ -28,7 +28,6 @@ type staticSourceHandler struct {
 	logLevel       conf.LogLevel
 	readTimeout    conf.StringDuration
 	writeTimeout   conf.StringDuration
-	writeQueueSize int
 	resolvedSource string
 	parent         staticSourceHandlerParent
 
