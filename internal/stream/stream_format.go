@@ -7,10 +7,10 @@ import (
 	"github.com/bluenviron/gortsplib/v4/pkg/description"
 	"github.com/bluenviron/gortsplib/v4/pkg/format"
 	"github.com/pion/rtp"
+	"github.com/sirupsen/logrus"
 
 	"github.com/bluenviron/mediamtx/internal/asyncwriter"
 	"github.com/bluenviron/mediamtx/internal/formatprocessor"
-	"github.com/bluenviron/mediamtx/internal/logger"
 	"github.com/bluenviron/mediamtx/internal/unit"
 )
 
@@ -23,16 +23,12 @@ func unitSize(u unit.Unit) uint64 {
 }
 
 type streamFormat struct {
-	decodeErrLogger logger.Writer
-	proc            formatprocessor.Processor
-	readers         map[*asyncwriter.Writer]readerFunc
+	proc    *formatprocessor.FormatProcessorH264
+	readers map[*asyncwriter.Writer]readerFunc
 }
 
-func newStreamFormat(
-	forma format.Format,
-	generateRTPPackets bool,
-) (*streamFormat, error) {
-	proc, err := formatprocessor.New(forma)
+func newStreamFormat(forma format.Format) (*streamFormat, error) {
+	proc, err := formatprocessor.NewH264(forma.(*format.H264))
 	if err != nil {
 		return nil, err
 	}
@@ -56,7 +52,7 @@ func (sf *streamFormat) removeReader(r *asyncwriter.Writer) {
 func (sf *streamFormat) writeUnit(s *Stream, medi *description.Media, u unit.Unit) {
 	err := sf.proc.ProcessUnit(u)
 	if err != nil {
-		sf.decodeErrLogger.Log(logger.Warn, err.Error())
+		logrus.Warn("[stream] write unit ", err)
 		return
 	}
 
@@ -74,7 +70,7 @@ func (sf *streamFormat) writeRTPPacket(
 
 	u, err := sf.proc.ProcessRTPPacket(pkt, ntp, pts, hasNonRTSPReaders)
 	if err != nil {
-		sf.decodeErrLogger.Log(logger.Warn, err.Error())
+		logrus.Warn("[stream] process rtp packet ", err)
 		return
 	}
 
@@ -89,12 +85,6 @@ func (sf *streamFormat) writeUnitInner(s *Stream, medi *description.Media, u uni
 	if s.rtspStream != nil {
 		for _, pkt := range u.GetRTPPackets() {
 			s.rtspStream.WritePacketRTPWithNTP(medi, pkt, u.GetNTP()) //nolint:errcheck
-		}
-	}
-
-	if s.rtspsStream != nil {
-		for _, pkt := range u.GetRTPPackets() {
-			s.rtspsStream.WritePacketRTPWithNTP(medi, pkt, u.GetNTP()) //nolint:errcheck
 		}
 	}
 

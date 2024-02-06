@@ -15,6 +15,14 @@ import (
 
 const UDP_MAX_PAYLOAD_SIZE = 1472
 
+// avoid an int64 overflow and preserve resolution by splitting division into two parts:
+// first add the integer part, then the decimal part.
+func multiplyAndDivide(v, m, d time.Duration) time.Duration {
+	secs := v / d
+	dec := v % d
+	return (secs*m + dec*m/d)
+}
+
 // extract SPS and PPS without decoding RTP packets
 func rtpH264ExtractParams(payload []byte) ([]byte, []byte) {
 	if len(payload) < 1 {
@@ -72,17 +80,17 @@ func rtpH264ExtractParams(payload []byte) ([]byte, []byte) {
 	}
 }
 
-type formatProcessorH264 struct {
+type FormatProcessorH264 struct {
 	format *format.H264
 
 	encoder *rtph264.Encoder
 	decoder *rtph264.Decoder
 }
 
-func newH264(
+func NewH264(
 	forma *format.H264,
-) (*formatProcessorH264, error) {
-	t := &formatProcessorH264{
+) (*FormatProcessorH264, error) {
+	t := &FormatProcessorH264{
 		format: forma,
 	}
 
@@ -94,7 +102,7 @@ func newH264(
 	return t, nil
 }
 
-func (t *formatProcessorH264) createEncoder(
+func (t *FormatProcessorH264) createEncoder(
 	ssrc *uint32,
 	initialSequenceNumber *uint16,
 ) error {
@@ -108,7 +116,7 @@ func (t *formatProcessorH264) createEncoder(
 	return t.encoder.Init()
 }
 
-func (t *formatProcessorH264) updateTrackParametersFromRTPPacket(payload []byte) {
+func (t *FormatProcessorH264) updateTrackParametersFromRTPPacket(payload []byte) {
 	sps, pps := rtpH264ExtractParams(payload)
 
 	if (sps != nil && !bytes.Equal(sps, t.format.SPS)) ||
@@ -123,7 +131,7 @@ func (t *formatProcessorH264) updateTrackParametersFromRTPPacket(payload []byte)
 	}
 }
 
-func (t *formatProcessorH264) updateTrackParametersFromAU(au [][]byte) {
+func (t *FormatProcessorH264) updateTrackParametersFromAU(au [][]byte) {
 	sps := t.format.SPS
 	pps := t.format.PPS
 	update := false
@@ -151,7 +159,7 @@ func (t *formatProcessorH264) updateTrackParametersFromAU(au [][]byte) {
 	}
 }
 
-func (t *formatProcessorH264) remuxAccessUnit(au [][]byte) [][]byte {
+func (t *FormatProcessorH264) remuxAccessUnit(au [][]byte) [][]byte {
 	isKeyFrame := false
 	n := 0
 
@@ -209,7 +217,7 @@ func (t *formatProcessorH264) remuxAccessUnit(au [][]byte) [][]byte {
 	return filteredNALUs
 }
 
-func (t *formatProcessorH264) ProcessUnit(uu unit.Unit) error {
+func (t *FormatProcessorH264) ProcessUnit(uu unit.Unit) error {
 	u := uu.(*unit.H264)
 
 	t.updateTrackParametersFromAU(u.AU)
@@ -231,12 +239,12 @@ func (t *formatProcessorH264) ProcessUnit(uu unit.Unit) error {
 	return nil
 }
 
-func (t *formatProcessorH264) ProcessRTPPacket( //nolint:dupl
+func (t *FormatProcessorH264) ProcessRTPPacket( //nolint:dupl
 	pkt *rtp.Packet,
 	ntp time.Time,
 	pts time.Duration,
 	hasNonRTSPReaders bool,
-) (Unit, error) {
+) (unit.Unit, error) {
 	u := &unit.H264{
 		Base: unit.Base{
 			RTPPackets: []*rtp.Packet{pkt},

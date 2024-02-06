@@ -461,7 +461,7 @@ func (pa *path) onDemandPublisherStop(reason string) {
 
 func (pa *path) setReady(desc *description.Session, allocateEncoder bool) error {
 	var err error
-	pa.stream, err = stream.New(desc, allocateEncoder)
+	pa.stream, err = stream.New(desc)
 	if err != nil {
 		return err
 	}

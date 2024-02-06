@@ -27,13 +27,11 @@ type Stream struct {
 	smedias       map[*description.Media]*streamMedia
 	mutex         sync.RWMutex
 	rtspStream    *gortsplib.ServerStream
-	rtspsStream   *gortsplib.ServerStream
 }
 
 // New allocates a Stream.
 func New(
 	desc *description.Session,
-	generateRTPPackets bool,
 ) (*Stream, error) {
 	s := &Stream{
 		desc:          desc,
@@ -45,7 +43,7 @@ func New(
 
 	for _, media := range desc.Medias {
 		var err error
-		s.smedias[media], err = newStreamMedia(media, generateRTPPackets)
+		s.smedias[media], err = newStreamMedia(media)
 		if err != nil {
 			return nil, err
 		}
@@ -56,12 +54,8 @@ func New(
 
 // Close closes all resources of the stream.
 func (s *Stream) Close() {
-	if s.rtspStream != nil {
-		s.rtspStream.Close()
-	}
-	if s.rtspsStream != nil {
-		s.rtspsStream.Close()
-	}
+	s.rtspStream.Close()
+
 }
 
 // Desc returns the description of the stream.

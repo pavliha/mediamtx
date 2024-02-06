@@ -11,7 +11,6 @@ type streamMedia struct {
 
 func newStreamMedia(
 	medi *description.Media,
-	generateRTPPackets bool,
 ) (*streamMedia, error) {
 	sm := &streamMedia{
 		formats: make(map[format.Format]*streamFormat),
@@ -19,7 +18,7 @@ func newStreamMedia(
 
 	for _, forma := range medi.Formats {
 		var err error
-		sm.formats[forma], err = newStreamFormat(forma, generateRTPPackets)
+		sm.formats[forma], err = newStreamFormat(forma)
 		if err != nil {
 			return nil, err
 		}
